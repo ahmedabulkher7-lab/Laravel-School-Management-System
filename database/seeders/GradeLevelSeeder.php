@@ -21,8 +21,12 @@ class GradeLevelSeeder extends Seeder {
             ['name' => 'الصف العاشر', 'order' => 12],
             ['name' => 'الصف الحادي عشر', 'order' => 13],
         ];
-        foreach ($levels as $level) {
-            GradeLevel::firstOrCreate(['order' => $level['order']], $level);
+        foreach (['arabic', 'languages'] as $track) {
+            foreach ($levels as $level) {
+                $level['track'] = $track;
+                $level['name'] = $level['name'] . ' (' . ($track === 'arabic' ? 'عربي' : 'لغات') . ')';
+                GradeLevel::firstOrCreate(['order' => $level['order'], 'track' => $track], $level);
+            }
         }
     }
 }

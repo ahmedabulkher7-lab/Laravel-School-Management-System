@@ -4,46 +4,73 @@
 @section('content')
 <div class="page-header">
     <div>
-        <h1 class="page-title">توليد التقارير الأسبوعية</h1>
-        <div class="page-subtitle">توليد تقرير شامل بتنسيق PDF لكل طالب بناءً على سجلات التقدم الأسبوعية</div>
+        <h1 class="page-title">التقارير الأسبوعية</h1>
+        <div class="page-subtitle">تُنشأ التقارير تلقائيًا بعد اكتمال تقييمات الأسبوع</div>
     </div>
+        <form method="GET" action="{{ route('admin.reports.index') }}" style="display:flex;align-items:end;gap:0.6rem;">
+            <div>
+                <label class="form-label" style="font-size:0.78rem;">أسبوع يبدأ في</label>
+                <input type="date" name="week_start" value="{{ $weekStart->toDateString() }}" class="form-input">
+            </div>
+            <div>
+                <label class="form-label" style="font-size:0.78rem;">حالة التقرير</label>
+                <select name="status" class="form-select">
+                    <option value="all" {{ $status === 'all' ? 'selected' : '' }}>كل الطلاب</option>
+                    <option value="ready" {{ $status === 'ready' ? 'selected' : '' }}>التقرير جاهز</option>
+                    <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>غير جاهز</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-secondary"><i class="fas fa-filter"></i> فلترة</button>
+        </form>
 </div>
 
+    <div class="alert-success" style="margin-bottom:1.25rem;">
+        <i class="fas fa-calendar-week"></i>
+        حالة التقييم للأسبوع: {{ $weekStart->locale('ar')->isoFormat('D MMMM YYYY') }} إلى {{ $weekStart->copy()->addDays(6)->locale('ar')->isoFormat('D MMMM YYYY') }}
+    </div>
+
 <div class="grid-2" style="align-items:start;">
-    <!-- Generate Form -->
+    <!-- Automatic generation -->
     <div class="card">
-        <div class="card-header"><span class="card-title">توليد تقرير جديد</span></div>
-        <div class="card-body">
-            <form id="generate-form" action="" method="POST">
-                @csrf
-                <div class="form-group">
-                    <label class="form-label">الطالب <span style="color:#ef4444">*</span></label>
-                    <select id="student_select" class="form-select" required onchange="updateFormAction()">
-                        <option value="">-- اختر الطالب --</option>
-                        @foreach($students as $student)
-                            <option value="{{ $student->id }}">{{ $student->full_name }} ({{ $student->gradeLevel->name }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">تاريخ بداية الأسبوع (عادة الأحد) <span style="color:#ef4444">*</span></label>
-                    <input type="date" name="week_start" class="form-input" required>
-                    <span class="form-error" style="color:#475569;font-size:0.75rem;">سيتم حساب 7 أيام تلقائياً من هذا التاريخ</span>
-                </div>
-                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-top:1rem;">
-                    <i class="fas fa-file-pdf"></i> توليد التقرير وإرسال إشعار
-                </button>
-            </form>
-            <script>
-                function updateFormAction() {
-                    const select = document.getElementById('student_select');
-                    const studentId = select.value;
-                    const form = document.getElementById('generate-form');
-                    if(studentId) {
-                        form.action = `/admin/reports/generate/${studentId}`;
-                    }
-                }
-            </script>
+        <div class="card-header"><span class="card-title"><i class="fas fa-magic"></i> التوليد التلقائي</span></div>
+        <div class="card-body" style="line-height:1.8;color:#475569;">
+            <i class="fas fa-info-circle" style="color:#0C7261;"></i>
+            يتم إنشاء التقرير تلقائيًا وإرساله للطالب فور تسجيل تقييمات جميع المواد لأيام الأسبوع الدراسي.
+            <div style="margin-top:0.75rem;font-size:0.82rem;color:#64748b;">
+                لا يحتاج المدير إلى الضغط على زر التوليد. استخدم جدول الحالة أدناه لمعرفة الطلاب الجاهزين.
+            </div>
+        </div>
+    </div>
+
+    <!-- Readiness -->
+    <div class="card" style="grid-column:1/-1;">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-clipboard-check"></i> حالة تقارير الطلاب</span>
+            <span style="font-size:0.82rem;color:#475569;">{{ $readyCount }} جاهز / {{ $pendingCount }} غير جاهز</span>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+            <table class="data-table">
+                <thead><tr><th>الطالب</th><th>الصف</th><th>التقييمات المكتملة</th><th>الحالة</th><th>التفاصيل</th></tr></thead>
+                <tbody>
+                @forelse($students as $student)
+                    <tr>
+                        <td style="font-weight:700;color:#0C7261;">{{ $student->full_name }}</td>
+                        <td>{{ $student->gradeLevel->name }}</td>
+                        <td>{{ $student->report_readiness['completed'] }} / {{ $student->report_readiness['required'] }} مادة</td>
+                        <td>
+                            @if($student->report_readiness['ready'])
+                                <span class="badge badge-green"><i class="fas fa-check-circle"></i> جاهز</span>
+                            @else
+                                <span class="badge badge-yellow"><i class="fas fa-clock"></i> غير جاهز</span>
+                            @endif
+                        </td>
+                        <td style="font-size:0.78rem;color:#a16207;">{{ implode('، ', $student->report_readiness['missing']) ?: 'كل التقييمات مكتملة' }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" style="text-align:center;padding:1.5rem;">لا يوجد طلاب مطابقون للفلتر.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\StudyTrack;
 use App\Http\Controllers\Controller;
 use App\Models\Teacher;
 use App\Models\Subject;
@@ -15,16 +16,17 @@ class TeacherController extends Controller
     public function index()
     {
         $this->authorize('viewAny', Teacher::class);
-        $teachers = Teacher::with(['subject', 'gradeLevels'])->latest()->paginate(20);
+        $teachers = Teacher::with(['subjects', 'gradeLevels'])->latest()->paginate(20);
         return view('admin.teachers.index', compact('teachers'));
     }
 
     public function create()
     {
         $this->authorize('create', Teacher::class);
-        $subjects    = Subject::orderBy('name')->get();
-        $gradeLevels = GradeLevel::orderBy('order')->get();
-        return view('admin.teachers.create', compact('subjects', 'gradeLevels'));
+        $subjects = Subject::orderBy('name')->get();
+        $gradeLevels = GradeLevel::orderBy('track')->orderBy('order')->get();
+        $tracks = StudyTrack::cases();
+        return view('admin.teachers.create', compact('subjects', 'gradeLevels', 'tracks'));
     }
 
     public function store(StoreTeacherRequest $request)
@@ -38,12 +40,12 @@ class TeacherController extends Controller
             $user->assignRole('teacher');
 
             $teacher = Teacher::create([
-                'user_id'    => $user->id,
-                'full_name'  => $request->full_name,
-                'subject_id' => $request->subject_id,
-                'phone'      => $request->phone,
+                'user_id'   => $user->id,
+                'full_name' => $request->full_name,
+                'phone'     => $request->phone,
             ]);
 
+            $teacher->subjects()->sync($request->subject_ids);
             $teacher->gradeLevels()->sync($request->grade_level_ids);
         });
 
@@ -54,9 +56,11 @@ class TeacherController extends Controller
     public function edit(Teacher $teacher)
     {
         $this->authorize('update', $teacher);
-        $subjects    = Subject::orderBy('name')->get();
-        $gradeLevels = GradeLevel::orderBy('order')->get();
-        return view('admin.teachers.edit', compact('teacher', 'subjects', 'gradeLevels'));
+        $subjects = Subject::orderBy('name')->get();
+        $gradeLevels = GradeLevel::orderBy('track')->orderBy('order')->get();
+        $tracks = StudyTrack::cases();
+        $teacher->load(['subjects', 'gradeLevels']);
+        return view('admin.teachers.edit', compact('teacher', 'subjects', 'gradeLevels', 'tracks'));
     }
 
     public function update(StoreTeacherRequest $request, Teacher $teacher)
@@ -70,11 +74,11 @@ class TeacherController extends Controller
             $teacher->user->update($userUpdate);
 
             $teacher->update([
-                'full_name'  => $request->full_name,
-                'subject_id' => $request->subject_id,
-                'phone'      => $request->phone,
+                'full_name' => $request->full_name,
+                'phone'     => $request->phone,
             ]);
 
+            $teacher->subjects()->sync($request->subject_ids);
             $teacher->gradeLevels()->sync($request->grade_level_ids);
         });
 

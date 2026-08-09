@@ -1,20 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Teacher;
 use App\Http\Controllers\Student;
+use App\Http\Controllers\LandingPageController;
 
 // ─── Root redirect ────────────────────────────────────────────────────────────
-Route::get('/', function () {
-    if (!Auth::check()) return redirect()->route('login');
-    $user = Auth::user();
-    if ($user->hasRole('admin'))   return redirect()->route('admin.dashboard');
-    if ($user->hasRole('teacher')) return redirect()->route('teacher.dashboard');
-    if ($user->hasRole('student')) return redirect()->route('student.dashboard');
-    return redirect()->route('login');
-});
+Route::get('/', [LandingPageController::class, 'index'])->name('home');
+Route::post('/contact', [LandingPageController::class, 'storeContact'])->name('contact.store');
+Route::view('/privacy', 'legal', ['title' => 'Privacy policy', 'heading' => 'Your privacy matters', 'content' => 'Summit Academy uses contact information only to respond to your enquiry and support your relationship with the school. We do not sell personal information.'])->name('privacy');
+Route::view('/terms', 'legal', ['title' => 'Terms of use', 'heading' => 'Terms of use', 'content' => 'Please use the Summit Academy website and family portal respectfully and only for their intended educational purpose.'])->name('terms');
 
 // ─── Auth Routes ──────────────────────────────────────────────────────────────
 Route::get('/login', [\App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
@@ -37,10 +33,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     // Grade Levels CRUD
     Route::resource('grade-levels', Admin\GradeLevelController::class);
 
-    // Assignments
-    Route::get('/assignments', [Admin\AssignmentController::class, 'index'])->name('assignments.index');
-    Route::post('/assignments', [Admin\AssignmentController::class, 'store'])->name('assignments.store');
-    Route::delete('/assignments/{assignment}', [Admin\AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
     // Schedule
     Route::resource('schedules', Admin\ScheduleController::class);
@@ -52,6 +44,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/reports', [Admin\ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/generate/{student}', [Admin\ReportController::class, 'generate'])->name('reports.generate');
     Route::get('/reports/download/{report}', [Admin\ReportController::class, 'download'])->name('reports.download');
+
+    // Weekly plans
+    Route::get('/weekly-plans', [Admin\WeeklyPlanController::class, 'index'])->name('weekly-plans.index');
+    Route::get('/weekly-plans/{gradeLevel}/download', [Admin\WeeklyPlanController::class, 'download'])->name('weekly-plans.download');
 
     // Notifications
     Route::get('/notifications', [Admin\NotificationController::class, 'index'])->name('notifications.index');
@@ -65,6 +61,8 @@ Route::prefix('teacher')->name('teacher.')->middleware(['auth', 'role:teacher'])
     Route::get('/students', [Teacher\StudentController::class, 'index'])->name('students.index');
     Route::get('/progress/log', [Teacher\ProgressController::class, 'log'])->name('progress.log');
     Route::get('/progress/history', [Teacher\ProgressController::class, 'history'])->name('progress.history');
+    Route::get('/weekly-plans', [Teacher\WeeklyPlanController::class, 'index'])->name('weekly-plans.index');
+    Route::post('/weekly-plans/{gradeLevel}', [Teacher\WeeklyPlanController::class, 'store'])->name('weekly-plans.store');
     Route::get('/notifications', [Teacher\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/mark-read', [Teacher\NotificationController::class, 'markRead'])->name('notifications.markRead');
 });

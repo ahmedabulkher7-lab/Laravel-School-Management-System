@@ -9,6 +9,8 @@ class DatabaseSeeder extends Seeder {
             RoleSeeder::class,
             GradeLevelSeeder::class,
             AdminUserSeeder::class,
+            FakeDataSeeder::class,
+            WeeklyPlanSeeder::class,
         ]);
     }
 }

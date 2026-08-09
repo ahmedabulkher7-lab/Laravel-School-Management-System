@@ -45,22 +45,55 @@
     </div>
 </div>
 
+@if($weeklyPlanReminder)
+<div class="card" style="border-color:rgba(245,158,11,0.45);margin-bottom:1.5rem;">
+    <div class="card-header" style="background:rgba(245,158,11,0.08);">
+        <span class="card-title" style="color:#92400e;">
+            <i class="fas fa-calendar-week"></i> تذكير الجدول الأسبوعي
+        </span>
+        <a href="{{ $weeklyPlanReminder->data['url'] ?? route('teacher.weekly-plans.index') }}" class="btn-primary" style="padding:0.4rem 0.9rem;font-size:0.8rem;background:#d97706;">
+            إدخال الجدول <i class="fas fa-arrow-left"></i>
+        </a>
+    </div>
+    <div class="card-body" style="color:#78350f;">
+        {{ $weeklyPlanReminder->data['message'] ?? 'يرجى إدخال الجدول الأسبوعي للطلاب.' }}
+    </div>
+</div>
+@endif
+
 @if($pendingStudents->count() > 0)
 <div class="card" style="border-color:rgba(239,68,68,0.3);">
     <div class="card-header" style="background:rgba(239,68,68,0.05);">
-        <span class="card-title" style="color:#991b1b;"><i class="fas fa-bell"></i> تذكير: طلاب بانتظار إدخال التقدم اليومي</span>
-        <a href="{{ route('teacher.progress.log') }}" class="btn-primary" style="padding:0.4rem 0.9rem;font-size:0.8rem;background:linear-gradient(135deg, #ef4444, #dc2626);color:white;">
-            الانتقال لإدخال السجلات <i class="fas fa-arrow-left"></i>
+        <span class="card-title" style="color:#991b1b;">
+            <i class="fas fa-bell"></i> تذكير: طلاب بانتظار إدخال التقدم اليومي
+        </span>
+        <a href="{{ route('teacher.progress.log') }}" class="btn-primary"
+           style="padding:0.4rem 0.9rem;font-size:0.8rem;background:linear-gradient(135deg, #ef4444, #dc2626);color:white;">
+            ابدأ تسجيل التقدم <i class="fas fa-arrow-left"></i>
         </a>
     </div>
     <div class="card-body">
-        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
-            @foreach($pendingStudents as $ps)
-                <span style="background:#ffffff;padding:0.5rem 1rem;border-radius:2rem;font-size:0.85rem;color:#0C7261;border:1px solid #475569;">
-                    {{ $ps->full_name }} ({{ $ps->gradeLevel->name }})
-                </span>
-            @endforeach
-        </div>
+        {{-- Group by grade level --}}
+        @foreach($pendingByGradeLevel as $gradeName => $groupStudents)
+            <div style="margin-bottom:1rem;">
+                <div style="font-size:0.8rem;font-weight:700;color:#475569;margin-bottom:0.5rem;
+                            display:flex;align-items:center;gap:0.4rem;">
+                    <i class="fas fa-chalkboard" style="color:#0C7261;"></i>
+                    {{ $gradeName }}
+                    <span style="background:#e2e8f0;color:#475569;border-radius:2rem;padding:0.1rem 0.5rem;font-size:0.72rem;">
+                        {{ $groupStudents->count() }} طالب
+                    </span>
+                </div>
+                <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+                    @foreach($groupStudents as $ps)
+                        <span style="background:#ffffff;padding:0.4rem 0.85rem;border-radius:2rem;
+                                     font-size:0.83rem;color:#0C7261;border:1px solid rgba(12,114,97,0.3);">
+                            {{ $ps->full_name }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
     </div>
 </div>
 @else

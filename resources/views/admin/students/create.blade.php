@@ -14,6 +14,12 @@
 
 <div class="card">
     <div class="card-body">
+        @if($errors->any())
+            <div class="alert-error" style="margin-bottom:1rem;">
+                <i class="fas fa-exclamation-circle"></i>
+                يرجى مراجعة البيانات المطلوبة قبل الحفظ.
+            </div>
+        @endif
         <form action="{{ route('admin.students.store') }}" method="POST">
             @csrf
             
@@ -47,6 +53,18 @@
                         @endforeach
                     </select>
                     @error('grade_level_id') <span class="form-error">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
+                    <label class="form-label">المسار الدراسي <span style="color:#ef4444">*</span></label>
+                    <select name="track" class="form-select" required>
+                        <option value="">-- اختر المسار --</option>
+                        @foreach($tracks as $trackItem)
+                            <option value="{{ $trackItem->value }}" {{ old('track') === $trackItem->value ? 'selected' : '' }}>
+                                {{ $trackItem->value === 'arabic' ? 'عربي' : 'لغات' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('track') <span class="form-error">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label class="form-label">تاريخ الميلاد <span style="color:#ef4444">*</span></label>

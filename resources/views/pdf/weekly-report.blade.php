@@ -93,7 +93,7 @@
     </table>
 </div>
 
-@if($assignments->isEmpty())
+@if($subjects->isEmpty())
     <div style="text-align:center; padding: 40px; color: #475569; background: #f8fafc; border: 1px dashed #475569;">
         لا توجد مواد مسندة لهذا الطالب حالياً.
     </div>
@@ -109,9 +109,8 @@
         ];
     @endphp
 
-    @foreach($assignments as $assignment)
+    @foreach($subjects as $subject)
         @php 
-            $subject = $assignment->subject; 
             $subjectProgress = $progress->where('subject_id', $subject->id);
         @endphp
         <div class="subject-title">
@@ -132,7 +131,9 @@
             <tbody>
                 @foreach($days as $day)
                     @php
-                        $rec = $subjectProgress->firstWhere('date', $day->toDateString());
+                        $rec = $subjectProgress->first(
+                            fn ($progressRecord) => $progressRecord->date?->format('Y-m-d') === $day->toDateString()
+                        );
                         $dayName = $arDays[$day->format('l')] ?? $day->format('l');
                     @endphp
                     <tr>

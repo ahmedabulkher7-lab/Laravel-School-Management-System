@@ -36,7 +36,7 @@
         <div class="stat-card" style="padding:1.2rem;">
             <div class="stat-icon" style="background:rgba(59,130,246,0.15);width:3rem;height:3rem;font-size:1.2rem;"><i class="fas fa-book" style="color:#2563eb;"></i></div>
             <div>
-                <div style="font-size:1.5rem;font-weight:800;color:#0C7261;">{{ $student->assignments()->count() }}</div>
+                <div style="font-size:1.5rem;font-weight:800;color:#0C7261;">{{ $subjectCount }}</div>
                 <div style="font-size:0.75rem;color:#475569;font-weight:700;">مواد تدرسها</div>
             </div>
         </div>

@@ -43,6 +43,10 @@
                class="sidebar-link {{ request()->routeIs('teacher.progress.history') ? 'active' : '' }}">
                 <i class="fas fa-history"></i> السجل التاريخي
             </a>
+            <a href="{{ route('teacher.weekly-plans.index') }}"
+               class="sidebar-link {{ request()->routeIs('teacher.weekly-plans.*') ? 'active' : '' }}">
+                <i class="fas fa-table"></i> الجدول الأسبوعي
+            </a>
         </nav>
 
         <div style="border-top:1px solid #e2e8f0;padding-top:1rem;margin-top:0.5rem;">

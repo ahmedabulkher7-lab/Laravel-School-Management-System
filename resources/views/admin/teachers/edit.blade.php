@@ -14,9 +14,15 @@
 
 <div class="card">
     <div class="card-body">
+        @if($errors->any())
+            <div class="alert-error" style="margin-bottom:1rem;">
+                <i class="fas fa-exclamation-circle"></i>
+                يرجى مراجعة البيانات المطلوبة قبل الحفظ.
+            </div>
+        @endif
         <form action="{{ route('admin.teachers.update', $teacher) }}" method="POST">
             @csrf @method('PUT')
-            
+
             <div class="section-title">بيانات الدخول</div>
             <div class="grid-2">
                 <div class="form-group">
@@ -48,27 +54,60 @@
             <div class="section-title">الاختصاص الأكاديمي</div>
             <div class="grid-2">
                 <div class="form-group">
-                    <label class="form-label">المادة التي يدرسها <span style="color:#ef4444">*</span></label>
-                    <select name="subject_id" class="form-select" required>
-                        <option value="">-- اختر المادة --</option>
+                    <label class="form-label">المواد التي يدرسها <span style="color:#ef4444">*</span></label>
+                    <div style="background:#f8fafc;border:1px solid rgba(71,85,105,0.6);border-radius:0.75rem;padding:1rem;display:flex;flex-wrap:wrap;gap:1rem;">
+                        @php $assignedSubjects = old('subject_ids', $teacher->subjects->pluck('id')->toArray()); @endphp
                         @foreach($subjects as $subj)
-                            <option value="{{ $subj->id }}" {{ old('subject_id', $teacher->subject_id) == $subj->id ? 'selected' : '' }}>
-                                {{ $subj->name_ar ?? $subj->name }}
-                            </option>
+                        <label style="display:flex;align-items:center;gap:0.4rem;color:#475569;cursor:pointer;">
+                            <input type="checkbox" name="subject_ids[]" value="{{ $subj->id }}"
+                                {{ in_array($subj->id, $assignedSubjects) ? 'checked' : '' }}
+                                style="accent-color:#0C7261;width:16px;height:16px;">
+                            {{ $subj->name_ar ?? $subj->name }}
+                        </label>
                         @endforeach
-                    </select>
-                    @error('subject_id') <span class="form-error">{{ $message }}</span> @enderror
+                    </div>
+                    @error('subject_ids') <span class="form-error">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label class="form-label">المراحل الدراسية المصرح له بتدريسها <span style="color:#ef4444">*</span></label>
-                    <div style="background:#f8fafc;border:1px solid rgba(71,85,105,0.6);border-radius:0.75rem;padding:1rem;display:flex;flex-wrap:wrap;gap:1rem;">
+
+                    {{-- Track Filter Buttons --}}
+                    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+                        <button type="button" onclick="filterGrades('all')" id="filter-all"
+                                style="padding:0.3rem 0.9rem;border-radius:2rem;border:2px solid #0C7261;
+                                       background:#0C7261;color:white;font-size:0.8rem;font-weight:600;cursor:pointer;
+                                       font-family:inherit;transition:all 0.2s;">
+                            🔍 الكل
+                        </button>
+                        @foreach($tracks as $trackItem)
+                        <button type="button" onclick="filterGrades('{{ $trackItem->value }}')" id="filter-{{ $trackItem->value }}"
+                                style="padding:0.3rem 0.9rem;border-radius:2rem;border:2px solid #cbd5e1;
+                                       background:white;color:#475569;font-size:0.8rem;font-weight:600;cursor:pointer;
+                                       font-family:inherit;transition:all 0.2s;">
+                            {{ $trackItem->value === 'arabic' ? '📚' : '🌐' }} {{ $trackItem->label() }}
+                        </button>
+                        @endforeach
+                    </div>
+
+                    <div id="grade-levels-container" style="background:#f8fafc;border:1px solid rgba(71,85,105,0.6);border-radius:0.75rem;padding:1rem;">
                         @php $assignedLevels = old('grade_level_ids', $teacher->gradeLevels->pluck('id')->toArray()); @endphp
                         @foreach($gradeLevels as $gl)
-                        <label style="display:flex;align-items:center;gap:0.4rem;color:#475569;cursor:pointer;">
+                        <label class="grade-label"
+                               data-track="{{ $gl->track->value ?? $gl->track }}"
+                               style="display:flex;align-items:center;gap:0.4rem;color:#475569;cursor:pointer;
+                                      padding:0.3rem 0.5rem;border-radius:0.5rem;transition:background 0.15s;
+                                      margin-bottom:0.25rem;">
                             <input type="checkbox" name="grade_level_ids[]" value="{{ $gl->id }}"
                                 {{ in_array($gl->id, $assignedLevels) ? 'checked' : '' }}
-                                style="accent-color:#0C7261;width:16px;height:16px;">
-                            {{ $gl->name }}
+                                style="accent-color:#0C7261;width:16px;height:16px;flex-shrink:0;">
+                            <span>{{ $gl->name }}</span>
+                            <span style="font-size:0.7rem;margin-right:auto;
+                                         background:{{ ($gl->track->value ?? $gl->track) === 'arabic' ? 'rgba(5,150,105,0.1)' : 'rgba(37,99,235,0.1)' }};
+                                         color:{{ ($gl->track->value ?? $gl->track) === 'arabic' ? '#065f46' : '#1e40af' }};
+                                         padding:0.1rem 0.5rem;border-radius:2rem;">
+                                {{ ($gl->track->value ?? $gl->track) === 'arabic' ? 'عربي' : 'لغات' }}
+                            </span>
                         </label>
                         @endforeach
                     </div>
@@ -82,4 +121,36 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function filterGrades(track) {
+    const labels = document.querySelectorAll('.grade-label');
+    const buttons = document.querySelectorAll('[id^="filter-"]');
+
+    // Reset all buttons
+    buttons.forEach(btn => {
+        btn.style.background = 'white';
+        btn.style.color = '#475569';
+        btn.style.borderColor = '#cbd5e1';
+    });
+
+    // Activate selected button
+    const activeBtn = document.getElementById('filter-' + track);
+    if (activeBtn) {
+        activeBtn.style.background = '#0C7261';
+        activeBtn.style.color = 'white';
+        activeBtn.style.borderColor = '#0C7261';
+    }
+
+    labels.forEach(label => {
+        if (track === 'all' || label.dataset.track === track) {
+            label.style.display = 'flex';
+        } else {
+            label.style.display = 'none';
+        }
+    });
+}
+</script>
+@endpush
 @endsection

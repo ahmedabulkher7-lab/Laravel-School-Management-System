@@ -9,7 +9,7 @@ class StudentPolicy {
     public function view(User $user, Student $student): bool {
         if ($user->hasRole('admin')) return true;
         if ($user->hasRole('teacher')) {
-            return $user->teacher->students()->where('students.id', $student->id)->exists();
+            return $user->teacher && $user->teacher->gradeLevels()->whereKey($student->grade_level_id)->exists();
         }
         if ($user->hasRole('student')) {
             return $user->student?->id === $student->id;

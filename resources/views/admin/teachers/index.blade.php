@@ -29,9 +29,9 @@
                 <tr>
                     <td style="font-weight:600;color:#0C7261;">{{ $teacher->full_name }}</td>
                     <td>
-                        @if($teacher->subject)
-                            <span class="badge" style="background:{{ $teacher->subject->color }}22; color:{{ $teacher->subject->color }}; border-color:{{ $teacher->subject->color }}55;">
-                                {{ $teacher->subject->name_ar ?? $teacher->subject->name }}
+                        @if($teacher->subjects->isNotEmpty())
+                            <span class="badge" style="background:{{ $teacher->subjects->first()->color ?? '#ccc' }}22; color:{{ $teacher->subjects->first()->color ?? '#ccc' }}; border-color:{{ $teacher->subjects->first()->color ?? '#ccc' }}55;">
+                                {{ $teacher->subjects->pluck('name_ar')->join(', ') }}
                             </span>
                         @else
                             <span style="color:#475569;">—</span>

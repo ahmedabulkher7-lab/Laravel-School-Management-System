@@ -7,7 +7,6 @@ use App\Models\Teacher;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\GradeLevel;
-use App\Models\TeacherStudentAssignment;
 use App\Models\DailyProgress;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -46,14 +45,17 @@ class FakeDataSeeder extends Seeder
             );
             $user->assignRole($teacherRole);
 
-            $teachers[] = Teacher::firstOrCreate(
+            $teacher = Teacher::firstOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'subject_id' => collect($subjectModels)->random()->id,
                     'full_name'  => "معلم تجريبي $i",
                     'phone'      => "0123456789$i",
+                    'track'      => ['arabic', 'languages'][rand(0, 1)],
                 ]
             );
+            // Attach 2 random subjects
+            $teacher->subjects()->syncWithoutDetaching(collect($subjectModels)->random(2)->pluck('id')->toArray());
+            $teachers[] = $teacher;
         }
 
         // 3. Create Students
@@ -61,6 +63,11 @@ class FakeDataSeeder extends Seeder
         $gradeLevels = GradeLevel::all();
         if ($gradeLevels->isEmpty()) {
             return; // Needs GradeLevels seeded first
+        }
+
+        // Attach random subjects to grade levels so students have subjects
+        foreach ($gradeLevels as $gl) {
+            $gl->subjects()->syncWithoutDetaching(collect($subjectModels)->random(4)->pluck('id')->toArray());
         }
 
         $students = [];
@@ -75,52 +82,46 @@ class FakeDataSeeder extends Seeder
             );
             $user->assignRole($studentRole);
 
+            $gl = $gradeLevels->random();
             $students[] = Student::firstOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'grade_level_id' => $gradeLevels->random()->id,
+                    'grade_level_id' => $gl->id,
                     'full_name' => "طالب تجريبي $i",
                     'date_of_birth' => now()->subYears(rand(6, 18))->toDateString(),
                     'guardian_name' => "ولي أمر الطالب $i",
                     'guardian_phone' => "0109876543$i",
                     'enrollment_date' => now()->subDays(rand(10, 100)),
+                    'track' => $gl->track,
                 ]
             );
         }
 
-        // 4. Create Assignments
-        foreach ($students as $student) {
-            // Assign 3 random subjects and teachers to each student
-            $assignedSubjects = collect($subjectModels)->random(3);
-            foreach ($assignedSubjects as $subject) {
-                $teacher = collect($teachers)->random();
-                TeacherStudentAssignment::firstOrCreate([
-                    'student_id' => $student->id,
-                    'subject_id' => $subject->id,
-                    'teacher_id' => $teacher->id,
-                ]);
-            }
-        }
-
-        // 5. Create Daily Progress (for the last 5 days)
+        // 4. Create Daily Progress (for the last 5 days)
         $statuses = ['present', 'present', 'present', 'absent', 'late'];
         $interactions = ['engaged', 'engaged', 'not_engaged'];
         
-        $assignments = TeacherStudentAssignment::all();
-        foreach ($assignments as $assignment) {
+        foreach ($students as $student) {
+            $studentSubjects = $student->subjects;
+            if ($studentSubjects->isEmpty()) continue;
+
             for ($d = 0; $d < 5; $d++) {
                 $date = Carbon::today()->subDays($d);
                 // Skip weekends
                 if ($date->isWeekend()) continue;
 
+                $subject = $studentSubjects->random();
+                // Find a teacher for this subject, fallback to random teacher
+                $teacher = $subject->teachers->first() ?? collect($teachers)->random();
+
                 DailyProgress::firstOrCreate(
                     [
-                        'student_id' => $assignment->student_id,
-                        'subject_id' => $assignment->subject_id,
+                        'student_id' => $student->id,
+                        'subject_id' => $subject->id,
                         'date'       => $date->toDateString(),
                     ],
                     [
-                        'teacher_id' => $assignment->teacher_id,
+                        'teacher_id' => $teacher->id,
                         'attendance_status' => $statuses[array_rand($statuses)],
                         'interaction_level' => $interactions[array_rand($interactions)],
                         'homework_submitted' => (bool)rand(0, 1),
