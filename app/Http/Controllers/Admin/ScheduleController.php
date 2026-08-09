@@ -22,7 +22,7 @@ class ScheduleController extends Controller
     {
         $gradeLevels = GradeLevel::orderBy('order')->get();
         $subjects    = Subject::orderBy('name')->get();
-        $teachers    = Teacher::with('subject')->get();
+        $teachers    = Teacher::with('subjects')->get();
         return view('admin.schedules.create', compact('gradeLevels', 'subjects', 'teachers'));
     }
 
@@ -47,7 +47,7 @@ class ScheduleController extends Controller
     {
         $gradeLevels = GradeLevel::orderBy('order')->get();
         $subjects    = Subject::orderBy('name')->get();
-        $teachers    = Teacher::with('subject')->get();
+        $teachers    = Teacher::with('subjects')->get();
         return view('admin.schedules.edit', compact('schedule', 'gradeLevels', 'subjects', 'teachers'));
     }
 

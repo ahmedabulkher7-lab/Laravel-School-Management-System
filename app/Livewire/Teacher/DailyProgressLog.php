@@ -4,14 +4,16 @@ namespace App\Livewire\Teacher;
 use Livewire\Component;
 use App\Models\DailyProgress;
 use App\Models\Student;
+use App\Models\Teacher;
 use App\Models\User;
 use App\Notifications\AllProgressLogged;
+use App\Services\WeeklyReportService;
 use Carbon\Carbon;
-use Spatie\Permission\Models\Role;
 
 class DailyProgressLog extends Component
 {
     public int    $studentId;
+    public int    $teacherId;
     public string $date;
     public string $attendanceStatus  = 'present';
     public string $interactionLevel  = 'engaged';
@@ -20,6 +22,7 @@ class DailyProgressLog extends Component
     public string $comment           = '';
     public bool   $saved             = false;
     public ?int   $existingId        = null;
+    public ?int   $subjectId         = null;
 
     protected function rules(): array
     {
@@ -44,10 +47,14 @@ class DailyProgressLog extends Component
         ];
     }
 
-    public function mount(int $studentId): void
+    public function mount(int $studentId, int $teacherId): void
     {
         $this->studentId = $studentId;
+        $this->teacherId = $teacherId;
         $this->date      = Carbon::today()->toDateString();
+
+        // Resolve the subject for this teacher based on the student's grade level subjects
+        $this->resolveSubjectId();
         $this->loadExisting();
     }
 
@@ -57,11 +64,38 @@ class DailyProgressLog extends Component
         $this->loadExisting();
     }
 
+    /**
+     * Pick the subject_id: use the first subject that both the teacher teaches
+     * AND is linked to the student's grade level.
+     */
+    private function resolveSubjectId(): void
+    {
+        $teacher = Teacher::with(['subjects', 'gradeLevels'])->find($this->teacherId);
+        $student = Student::with('gradeLevel.subjects')->find($this->studentId);
+
+        if (!$teacher || !$student || !$student->gradeLevel) {
+            $this->subjectId = null;
+            return;
+        }
+
+        $teacherSubjectIds  = $teacher->subjects->pluck('id');
+        $gradeLevelSubjectIds = $student->gradeLevel->subjects->pluck('id');
+
+        // Intersection: subjects teacher teaches that are also in the student's grade level
+        $shared = $teacherSubjectIds->intersect($gradeLevelSubjectIds);
+
+        $this->subjectId = $shared->first();
+    }
+
     private function loadExisting(): void
     {
-        $teacher  = auth()->user()->teacher;
+        if (!$this->subjectId) {
+            $this->existingId = null;
+            return;
+        }
+
         $existing = DailyProgress::where('student_id', $this->studentId)
-            ->where('subject_id', $teacher?->subject_id)
+            ->where('subject_id', $this->subjectId)
             ->whereDate('date', $this->date)
             ->first();
 
@@ -85,12 +119,17 @@ class DailyProgressLog extends Component
     public function save(): void
     {
         $this->validate();
-        $teacher = auth()->user()->teacher;
+        $teacher = Teacher::find($this->teacherId);
+
+        if (!$teacher) {
+            $this->addError('general', 'لم يتم العثور على بيانات المعلم.');
+            return;
+        }
 
         DailyProgress::updateOrCreate(
             [
                 'student_id' => $this->studentId,
-                'subject_id' => $teacher->subject_id,
+                'subject_id' => $this->subjectId,
                 'date'       => $this->date,
             ],
             [
@@ -106,18 +145,30 @@ class DailyProgressLog extends Component
         $this->saved      = true;
         $this->existingId = DailyProgress::where([
             'student_id' => $this->studentId,
-            'subject_id' => $teacher->subject_id,
+            'subject_id' => $this->subjectId,
         ])->whereDate('date', $this->date)->value('id');
+
+        $weekStart = Carbon::parse($this->date)->startOfWeek(Carbon::SUNDAY)->startOfDay();
+        app(WeeklyReportService::class)->generateIfReady(
+            Student::findOrFail($this->studentId),
+            $weekStart
+        );
 
         $this->notifyAdminIfAllLogged($teacher);
         $this->dispatch('progress-saved', studentId: $this->studentId);
     }
 
-    private function notifyAdminIfAllLogged($teacher): void
+    private function notifyAdminIfAllLogged(Teacher $teacher): void
     {
-        $assignedCount = $teacher->students()->count();
-        $loggedCount   = DailyProgress::where('teacher_id', $teacher->id)
-            ->whereDate('date', $this->date)->count();
+        // Count students in this teacher's grade levels
+        $assignedCount = Student::whereIn('grade_level_id',
+            $teacher->gradeLevels()->pluck('grade_levels.id')
+        )->count();
+
+        $loggedCount = DailyProgress::where('teacher_id', $teacher->id)
+            ->whereDate('date', $this->date)
+            ->distinct('student_id')
+            ->count('student_id');
 
         if ($loggedCount >= $assignedCount && $assignedCount > 0) {
             foreach (User::role('admin')->get() as $admin) {
@@ -128,7 +179,16 @@ class DailyProgressLog extends Component
 
     public function render()
     {
-        $student = Student::with('gradeLevel')->find($this->studentId);
-        return view('livewire.teacher.daily-progress-log', compact('student'));
+        $student = Student::with(['gradeLevel', 'gradeLevel.subjects'])->find($this->studentId);
+        $teacher = Teacher::with('subjects')->find($this->teacherId);
+
+        // The specific subject name for display
+        $subjectName = null;
+        if ($this->subjectId && $teacher) {
+            $subject = $teacher->subjects->firstWhere('id', $this->subjectId);
+            $subjectName = $subject?->name_ar ?? $subject?->name;
+        }
+
+        return view('livewire.teacher.daily-progress-log', compact('student', 'teacher', 'subjectName'));
     }
 }

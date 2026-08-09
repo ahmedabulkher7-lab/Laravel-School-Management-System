@@ -44,19 +44,32 @@
             </div>
 
             <div class="grid-2">
+                
                 <div class="form-group">
-                    <label class="form-label">المعلم والمادة <span style="color:#ef4444">*</span></label>
-                    <select name="teacher_id" id="teacher_select" class="form-select" required onchange="updateSubjects()">
+                    <label class="form-label">المعلم <span style="color:#ef4444">*</span></label>
+                    <select name="teacher_id" class="form-select" required>
                         <option value="">-- اختر المعلم --</option>
                         @foreach($teachers as $teacher)
-                            <option value="{{ $teacher->id }}" data-subject="{{ $teacher->subject_id }}" {{ old('teacher_id') == $teacher->id ? 'selected' : '' }}>
-                                {{ $teacher->full_name }} ({{ $teacher->subject->name_ar ?? $teacher->subject->name }})
+                            <option value="{{ $teacher->id }}" {{ old('teacher_id') == $teacher->id ? 'selected' : '' }}>
+                                {{ $teacher->full_name }}
                             </option>
                         @endforeach
                     </select>
                     @error('teacher_id') <span class="form-error">{{ $message }}</span> @enderror
                 </div>
-                <input type="hidden" name="subject_id" id="subject_id" value="{{ old('subject_id') }}">
+                <div class="form-group">
+                    <label class="form-label">المادة <span style="color:#ef4444">*</span></label>
+                    <select name="subject_id" class="form-select" required>
+                        <option value="">-- اختر المادة --</option>
+                        @foreach($subjects as $subject)
+                            <option value="{{ $subject->id }}" {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
+                                {{ $subject->name_ar ?? $subject->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('subject_id') <span class="form-error">{{ $message }}</span> @enderror
+                </div>
+
             </div>
 
             <div class="grid-2">
@@ -76,17 +89,7 @@
                 <button type="submit" class="btn-primary"><i class="fas fa-save"></i> إضافة الحصة</button>
             </div>
         </form>
-        <script>
-            function updateSubjects() {
-                const select = document.getElementById('teacher_select');
-                if(select.selectedIndex > 0) {
-                    const subjectId = select.options[select.selectedIndex].getAttribute('data-subject');
-                    document.getElementById('subject_id').value = subjectId;
-                }
-            }
-            // run on load in case of validation error old value
-            document.addEventListener('DOMContentLoaded', updateSubjects);
-        </script>
+        
     </div>
 </div>
 @endsection

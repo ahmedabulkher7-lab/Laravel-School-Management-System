@@ -24,7 +24,7 @@ class ProgressController extends Controller
         $progressRecords = $query->latest('date')->paginate(25)->withQueryString();
         $students = Student::orderBy('full_name')->get();
         $subjects = Subject::orderBy('name')->get();
-        $teachers = Teacher::with('subject')->get();
+        $teachers = Teacher::with('subjects')->get();
 
         return view('admin.progress.index',
             compact('progressRecords', 'students', 'subjects', 'teachers'));

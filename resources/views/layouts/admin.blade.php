@@ -55,14 +55,8 @@
                class="sidebar-link {{ request()->routeIs('admin.grade-levels.*') ? 'active' : '' }}">
                 <i class="fas fa-layer-group"></i> المراحل الدراسية
             </a>
-            <a href="{{ route('admin.assignments.index') }}"
-               class="sidebar-link {{ request()->routeIs('admin.assignments.*') ? 'active' : '' }}">
-                <i class="fas fa-link"></i> التعيينات
-            </a>
-            <a href="{{ route('admin.schedules.index') }}"
-               class="sidebar-link {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}">
-                <i class="fas fa-calendar-alt"></i> الجداول الدراسية
-            </a>
+
+    
 
             <div class="section-title">المتابعة</div>
             <a href="{{ route('admin.progress.index') }}"
@@ -72,6 +66,10 @@
             <a href="{{ route('admin.reports.index') }}"
                class="sidebar-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
                 <i class="fas fa-file-pdf"></i> التقارير الأسبوعية
+            </a>
+            <a href="{{ route('admin.weekly-plans.index') }}"
+               class="sidebar-link {{ request()->routeIs('admin.weekly-plans.*') ? 'active' : '' }}">
+                <i class="fas fa-calendar-week"></i> جداول الصفوف الأسبوعية
             </a>
         </nav>
 

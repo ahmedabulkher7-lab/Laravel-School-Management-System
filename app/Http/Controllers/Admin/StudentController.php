@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\StudyTrack;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\GradeLevel;
@@ -21,8 +22,9 @@ class StudentController extends Controller
     public function create()
     {
         $this->authorize('create', Student::class);
-        $gradeLevels = GradeLevel::orderBy('order')->get();
-        return view('admin.students.create', compact('gradeLevels'));
+        $gradeLevels = GradeLevel::orderBy('track')->orderBy('order')->get();
+        $tracks = StudyTrack::cases();
+        return view('admin.students.create', compact('gradeLevels', 'tracks'));
     }
 
     public function store(StoreStudentRequest $request)
@@ -40,6 +42,7 @@ class StudentController extends Controller
                 'full_name'       => $request->full_name,
                 'date_of_birth'   => $request->date_of_birth,
                 'grade_level_id'  => $request->grade_level_id,
+                'track'           => $request->track,
                 'guardian_name'   => $request->guardian_name,
                 'guardian_phone'  => $request->guardian_phone,
                 'phone'           => $request->phone,
@@ -54,7 +57,7 @@ class StudentController extends Controller
     public function show(Student $student)
     {
         $this->authorize('view', $student);
-        $student->load(['gradeLevel', 'assignments.teacher', 'assignments.subject',
+        $student->load(['gradeLevel.subjects', 'gradeLevel.teachers.subjects',
                         'dailyProgress' => fn($q) => $q->with('subject')->latest('date')->limit(30),
                         'weeklyReports' => fn($q) => $q->latest('generated_at')]);
         return view('admin.students.show', compact('student'));
@@ -63,8 +66,9 @@ class StudentController extends Controller
     public function edit(Student $student)
     {
         $this->authorize('update', $student);
-        $gradeLevels = GradeLevel::orderBy('order')->get();
-        return view('admin.students.edit', compact('student', 'gradeLevels'));
+        $gradeLevels = GradeLevel::orderBy('track')->orderBy('order')->get();
+        $tracks = StudyTrack::cases();
+        return view('admin.students.edit', compact('student', 'gradeLevels', 'tracks'));
     }
 
     public function update(StoreStudentRequest $request, Student $student)
@@ -81,6 +85,7 @@ class StudentController extends Controller
                 'full_name'       => $request->full_name,
                 'date_of_birth'   => $request->date_of_birth,
                 'grade_level_id'  => $request->grade_level_id,
+                'track'           => $request->track,
                 'guardian_name'   => $request->guardian_name,
                 'guardian_phone'  => $request->guardian_phone,
                 'phone'           => $request->phone,

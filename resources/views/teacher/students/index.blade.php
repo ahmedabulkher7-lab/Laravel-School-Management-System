@@ -5,7 +5,7 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">طلابي</h1>
-        <div class="page-subtitle">قائمة بجميع الطلاب المعينين لك في مادة {{ $teacher->subject->name_ar ?? $teacher->subject->name ?? '' }}</div>
+        <div class="page-subtitle">قائمة بجميع الطلاب المعينين لك في مادة {{ $teacher->subjects->pluck('name_ar')->join(', ') }}</div>
     </div>
 </div>
 

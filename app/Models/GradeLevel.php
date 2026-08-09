@@ -1,12 +1,15 @@
 <?php
 namespace App\Models;
 
+use App\Enums\StudyTrack;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class GradeLevel extends Model {
-    protected $fillable = ['name', 'order'];
+    protected $fillable = ['name', 'order', 'track'];
+
+    protected $casts = ['track' => StudyTrack::class];
 
     public function students(): HasMany { return $this->hasMany(Student::class); }
     public function subjects(): BelongsToMany { return $this->belongsToMany(Subject::class, 'grade_level_subject'); }

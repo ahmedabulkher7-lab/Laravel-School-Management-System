@@ -1,7 +1,10 @@
 <?php
 namespace App\Http\Requests;
 
+use App\Enums\StudyTrack;
+use App\Models\GradeLevel;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreStudentRequest extends FormRequest
 {
@@ -15,6 +18,7 @@ class StoreStudentRequest extends FormRequest
             'full_name'       => 'required|string|max:255',
             'date_of_birth'   => 'required|date|before:today',
             'grade_level_id'  => 'required|exists:grade_levels,id',
+            'track'           => ['required', Rule::enum(StudyTrack::class)],
             'guardian_name'   => 'required|string|max:255',
             'guardian_phone'  => 'required|string|max:20',
             'phone'           => 'nullable|string|max:20',
@@ -24,6 +28,19 @@ class StoreStudentRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            if (!in_array($this->input('track'), StudyTrack::values(), true) || !$this->filled('grade_level_id')) {
+                return;
+            }
+
+            $gradeLevel = GradeLevel::find($this->input('grade_level_id'));
+            if ($gradeLevel && $gradeLevel->track->value !== $this->input('track')) {
+                $validator->errors()->add('track', 'The student study track must match the selected grade level.');
+            }
+        });
+    }
     public function messages(): array
     {
         return [

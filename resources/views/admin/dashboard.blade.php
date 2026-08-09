@@ -56,6 +56,20 @@
     </div>
 </div>
 
+<div class="card" style="margin-bottom:2rem;border-color:rgba(12,114,97,0.25);">
+    <div class="card-header" style="background:rgba(12,114,97,0.06);">
+        <span class="card-title" style="color:#0C7261;">
+            <i class="fas fa-calendar-week"></i> الجداول الأسبوعية للصفوف
+        </span>
+        <a href="{{ route('admin.weekly-plans.index') }}" class="btn-primary" style="padding:0.45rem 0.9rem;font-size:0.8rem;">
+            مراجعة وتحميل الجداول <i class="fas fa-arrow-left"></i>
+        </a>
+    </div>
+    <div class="card-body" style="color:#475569;font-size:0.88rem;">
+        اعرض خطط جميع الصفوف، فلتر حسب مسار عربي أو لغات، وحمّل PDF الصف بعد اكتمال خطط كل المدرسين.
+    </div>
+</div>
+
 <!-- Recent Progress -->
 <div class="card">
     <div class="card-header">
@@ -74,7 +88,6 @@
                     <th>التاريخ</th>
                     <th>الحضور</th>
                     <th>التفاعل</th>
-                    <th>الواجب</th>
                     <th>الدرجة</th>
                 </tr>
             </thead>
@@ -101,13 +114,7 @@
                             <span class="badge badge-gray">غير متفاعل</span>
                         @endif
                     </td>
-                    <td>
-                        @if($rec->homework_submitted)
-                            <span class="badge badge-green">✓</span>
-                        @else
-                            <span class="badge badge-red">✗</span>
-                        @endif
-                    </td>
+           
                     <td>
                         @if($rec->score !== null)
                             <span style="font-weight:700;color:{{ $rec->score >= 7 ? '#166534' : ($rec->score >= 5 ? '#ca8a04' : '#dc2626') }};">

@@ -56,11 +56,20 @@
                         <div style="width:8px;height:8px;border-radius:50%;background:#0C7261;
                                     float:right;margin:0.35rem 0 0 0.5rem;box-shadow:0 0 0 2px rgba(12,114,97,0.2);"></div>
                     @endif
-                    <div style="font-size:0.85rem;font-weight:{{ is_null($notif->read_at) ? '700' : '600' }};
-                                color:{{ is_null($notif->read_at) ? '#0C7261' : '#475569' }};
-                                line-height:1.5;">
-                        {{ $notif->data['message'] ?? '' }}
-                    </div>
+                    @if(!empty($notif->data['url']))
+                        <a href="{{ $notif->data['url'] }}"
+                           style="font-size:0.85rem;font-weight:{{ is_null($notif->read_at) ? '700' : '600' }};
+                                  color:{{ is_null($notif->read_at) ? '#0C7261' : '#475569' }};
+                                  line-height:1.5;text-decoration:none;display:block;">
+                            {{ $notif->data['message'] ?? '' }}
+                        </a>
+                    @else
+                        <div style="font-size:0.85rem;font-weight:{{ is_null($notif->read_at) ? '700' : '600' }};
+                                    color:{{ is_null($notif->read_at) ? '#0C7261' : '#475569' }};
+                                    line-height:1.5;">
+                            {{ $notif->data['message'] ?? '' }}
+                        </div>
+                    @endif
                     <div style="font-size:0.7rem;color:#94a3b8;margin-top:0.4rem;clear:both;font-weight:600;">
                         <i class="fas fa-clock" style="margin-left:0.2rem;"></i>
                         {{ $notif->created_at->diffForHumans() }}
