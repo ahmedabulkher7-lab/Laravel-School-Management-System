@@ -12,17 +12,8 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(\App\Http\Requests\Auth\LoginRequest $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
-        ], [
-            'email.required'    => 'البريد الإلكتروني مطلوب',
-            'email.email'       => 'البريد الإلكتروني غير صالح',
-            'password.required' => 'كلمة المرور مطلوبة',
-        ]);
-
         if (Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             $request->session()->regenerate();
             $user = Auth::user();

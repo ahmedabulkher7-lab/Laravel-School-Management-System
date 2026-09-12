@@ -80,19 +80,9 @@ class ScheduleController extends Controller
         return view('admin.schedules.create', compact('gradeLevels', 'subjects', 'teachers'));
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\Admin\StoreScheduleRequest $request)
     {
-        $request->validate([
-            'grade_level_id' => 'required|exists:grade_levels,id',
-            'subject_id'     => 'required|exists:subjects,id',
-            'teacher_id'     => 'required|exists:teachers,id',
-            'day_of_week'    => 'required|integer|between:0,6',
-            'start_time'     => 'required|date_format:H:i',
-            'end_time'       => 'required|date_format:H:i|after:start_time',
-        ], [
-            'end_time.after' => 'وقت النهاية يجب أن يكون بعد وقت البداية',
-        ]);
-        Schedule::create($request->all());
+        Schedule::create($request->validated());
         return redirect()->route('admin.schedules.index')
             ->with('success', 'تم إضافة الحصة بنجاح');
     }
@@ -105,17 +95,9 @@ class ScheduleController extends Controller
         return view('admin.schedules.edit', compact('schedule', 'gradeLevels', 'subjects', 'teachers'));
     }
 
-    public function update(Request $request, Schedule $schedule)
+    public function update(\App\Http\Requests\Admin\StoreScheduleRequest $request, Schedule $schedule)
     {
-        $request->validate([
-            'grade_level_id' => 'required|exists:grade_levels,id',
-            'subject_id'     => 'required|exists:subjects,id',
-            'teacher_id'     => 'required|exists:teachers,id',
-            'day_of_week'    => 'required|integer|between:0,6',
-            'start_time'     => 'required|date_format:H:i',
-            'end_time'       => 'required|date_format:H:i|after:start_time',
-        ]);
-        $schedule->update($request->all());
+        $schedule->update($request->validated());
         return redirect()->route('admin.schedules.index')
             ->with('success', 'تم تحديث الحصة بنجاح');
     }

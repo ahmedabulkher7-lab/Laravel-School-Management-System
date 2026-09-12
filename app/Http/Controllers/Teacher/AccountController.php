@@ -15,19 +15,9 @@ class AccountController extends Controller
         return view('teacher.account.password');
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(\App\Http\Requests\Teacher\UpdatePasswordRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'string', 'min:8', 'confirmed', 'different:current_password'],
-        ], [
-            'current_password.required' => 'أدخل كلمة المرور الحالية.',
-            'current_password.current_password' => 'كلمة المرور الحالية غير صحيحة.',
-            'password.required' => 'أدخل كلمة المرور الجديدة.',
-            'password.min' => 'يجب أن تتكون كلمة المرور الجديدة من 8 أحرف على الأقل.',
-            'password.confirmed' => 'تأكيد كلمة المرور الجديدة غير متطابق.',
-            'password.different' => 'اختر كلمة مرور جديدة مختلفة عن الحالية.',
-        ]);
+        $validated = $request->validated();
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),

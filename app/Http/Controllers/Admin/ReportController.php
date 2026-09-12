@@ -43,16 +43,9 @@ class ReportController extends Controller
         return view('admin.reports.index', compact('students', 'reports', 'weekStart', 'status', 'readyCount', 'pendingCount'));
     }
 
-    public function generate(Request $request, Student $student)
+    public function generate(\App\Http\Requests\Admin\WeeklyReportRequest $request, Student $student)
     {
-        $request->validate([
-            'week_start' => 'required|date',
-        ], [
-            'week_start.required' => 'تاريخ بداية الأسبوع مطلوب',
-            'week_start.date'     => 'التاريخ غير صالح',
-        ]);
-
-        $weekStart = Carbon::parse($request->week_start)->startOfDay();
+        $weekStart = Carbon::parse($request->validated('week_start'))->startOfDay();
         $student->load(['gradeLevel.subjects', 'gradeLevel.teachers.subjects']);
         $report = app(WeeklyReportService::class)->generate($student, $weekStart);
 
@@ -67,15 +60,11 @@ class ReportController extends Controller
         return $this->streamDownload($report);
     }
 
-    public function downloadStudent(Request $request, Student $student)
+    public function downloadStudent(\App\Http\Requests\Admin\WeeklyReportRequest $request, Student $student)
     {
-        $request->validate([
-            'week_start' => 'required|date',
-        ]);
-
         $report = app(WeeklyReportService::class)->generate(
             $student,
-            Carbon::parse($request->week_start)->startOfDay(),
+            Carbon::parse($request->validated('week_start'))->startOfDay(),
         );
 
         return $this->streamDownload($report);
@@ -84,10 +73,9 @@ class ReportController extends Controller
     /**
      * بدء توليد كل التقارير في الخلفية.
      */
-    public function generateAll(Request $request)
+    public function generateAll(\App\Http\Requests\Admin\WeeklyReportRequest $request)
     {
-        $request->validate(['week_start' => 'required|date']);
-        $weekStart = Carbon::parse($request->week_start)->startOfDay();
+        $weekStart = Carbon::parse($request->validated('week_start'))->startOfDay();
         $cacheKey  = "report_gen_{$weekStart->toDateString()}";
 
         // لو عملية توليد شغّالة بالفعل، لا تبدأ واحدة جديدة
@@ -117,10 +105,9 @@ class ReportController extends Controller
     /**
      * إرجاع حالة التوليد الجارية.
      */
-    public function generateStatus(Request $request)
+    public function generateStatus(\App\Http\Requests\Admin\WeeklyReportRequest $request)
     {
-        $request->validate(['week_start' => 'required|date']);
-        $weekStart = Carbon::parse($request->week_start)->toDateString();
+        $weekStart = Carbon::parse($request->validated('week_start'))->toDateString();
         $progress  = Cache::get("report_gen_{$weekStart}", ['status' => 'idle', 'total' => 0, 'done' => 0, 'failed' => 0]);
         return response()->json($progress);
     }
@@ -128,10 +115,9 @@ class ReportController extends Controller
     /**
      * تحميل ZIP للتقارير المولَّدة مسبقاً فقط — سريع جداً.
      */
-    public function downloadAll(Request $request, \App\Actions\Reports\ExportWeeklyReportsArchive $archiveAction)
+    public function downloadAll(\App\Http\Requests\Admin\WeeklyReportRequest $request, \App\Actions\Reports\ExportWeeklyReportsArchive $archiveAction)
     {
-        $request->validate(['week_start' => 'required|date']);
-        $weekStart = Carbon::parse($request->week_start)->startOfDay();
+        $weekStart = Carbon::parse($request->validated('week_start'))->startOfDay();
 
         $reports = WeeklyReport::with(['student.gradeLevel'])
             ->whereDate('week_start_date', $weekStart->toDateString())

@@ -20,22 +20,12 @@ class SubjectController extends Controller
         return view('admin.subjects.create', compact('gradeLevels'));
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\Admin\StoreSubjectRequest $request)
     {
-        $request->validate([
-            'name'              => 'required|string|max:255',
-            'name_ar'           => 'nullable|string|max:255',
-            'color'             => 'required|string|max:7',
-            'grade_level_ids'   => 'nullable|array',
-            'grade_level_ids.*' => 'exists:grade_levels,id',
-        ], [
-            'name.required'  => 'اسم المادة مطلوب',
-            'color.required' => 'لون المادة مطلوب',
-        ]);
-
-        $subject = Subject::create($request->only('name', 'name_ar', 'color'));
-        if ($request->filled('grade_level_ids')) {
-            $subject->gradeLevels()->sync($request->grade_level_ids);
+        $validated = $request->validated();
+        $subject = Subject::create($validated);
+        if (!empty($validated['grade_level_ids'])) {
+            $subject->gradeLevels()->sync($validated['grade_level_ids']);
         }
 
         return redirect()->route('admin.subjects.index')
@@ -48,21 +38,14 @@ class SubjectController extends Controller
         return view('admin.subjects.edit', compact('subject', 'gradeLevels'));
     }
 
-    public function update(Request $request, Subject $subject)
+    public function update(\App\Http\Requests\Admin\StoreSubjectRequest $request, Subject $subject)
     {
-        $request->validate([
-            'name'              => 'required|string|max:255',
-            'name_ar'           => 'nullable|string|max:255',
-            'color'             => 'required|string|max:7',
-            'grade_level_ids'   => 'nullable|array',
-            'grade_level_ids.*' => 'exists:grade_levels,id',
-        ]);
-
-        $subject->update($request->only('name', 'name_ar', 'color'));
-        $subject->gradeLevels()->sync($request->grade_level_ids ?? []);
+        $validated = $request->validated();
+        $subject->update($validated);
+        $subject->gradeLevels()->sync($validated['grade_level_ids'] ?? []);
 
         return redirect()->route('admin.subjects.index')
-            ->with('success', 'تم تحديث المادة بنجاح');
+            ->with('success', 'تم تحديث المادة الدراسية بنجاح');
     }
 
     public function destroy(Subject $subject)

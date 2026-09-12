@@ -18,19 +18,9 @@ use Illuminate\View\View;
 
 class TeacherEvaluationStatusController extends Controller
 {
-    public function index(Request $request): View
+    public function index(\App\Http\Requests\Admin\FilterTeacherEvaluationStatusRequest $request): View
     {
-        $filters = $request->validate([
-            'date' => ['nullable', 'date'],
-            'teacher_id' => ['nullable', 'integer', 'exists:teachers,id'],
-            'grade_level_id' => ['nullable', 'integer', 'exists:grade_levels,id'],
-            'track' => ['nullable', Rule::in(StudyTrack::values())],
-            'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
-            'student_id' => ['nullable', 'integer', 'exists:students,id'],
-            'attendance' => ['nullable', Rule::in(['present', 'absent', 'late'])],
-            'interaction' => ['nullable', Rule::in(['engaged', 'not_engaged'])],
-            'status' => ['nullable', Rule::in(['all', 'complete', 'incomplete', 'started', 'not_started'])],
-        ]);
+        $filters = $request->validated();
 
         $date = Carbon::parse($filters['date'] ?? now())->startOfDay();
         $track = $filters['track'] ?? null;
