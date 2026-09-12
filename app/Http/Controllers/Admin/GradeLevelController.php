@@ -23,24 +23,9 @@ class GradeLevelController extends Controller
         return view('admin.grade-levels.create', compact('tracks'));
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\StoreGradeLevelRequest $request)
     {
-        $request->validate([
-            'name'  => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('grade_levels', 'name')->where('track', $request->input('track')),
-            ],
-            'order' => 'required|integer|min:1',
-            'track' => ['required', Rule::enum(StudyTrack::class)],
-        ], [
-            'name.required' => 'اسم المرحلة مطلوب',
-            'name.unique'   => 'هذه المرحلة موجودة مسبقاً',
-            'order.required'=> 'الترتيب مطلوب',
-        ]);
-
-        GradeLevel::create($request->only('name', 'order', 'track'));
+        GradeLevel::create($request->validated());
         return redirect()->route('admin.grade-levels.index')
             ->with('success', 'تم إضافة المرحلة الدراسية بنجاح');
     }
@@ -52,23 +37,10 @@ class GradeLevelController extends Controller
         return view('admin.grade-levels.edit', compact('gradeLevel', 'tracks'));
     }
 
-    public function update(Request $request, GradeLevel $gradeLevel)
+    public function update(\App\Http\Requests\StoreGradeLevelRequest $request, GradeLevel $gradeLevel)
     {
-        $request->validate([
-            'name'  => [
-                'required',  
-                'string',
-                'max:100',
-                Rule::unique('grade_levels', 'name')
-                    ->ignore($gradeLevel->id)
-                    ->where('track', $request->input('track')),
-            ],
-            'order' => 'required|integer|min:1',
-            'track' => ['required', Rule::enum(StudyTrack::class)],
-        ]);
-
         DB::transaction(function () use ($request, $gradeLevel): void {
-            $gradeLevel->update($request->only('name', 'order', 'track'));
+            $gradeLevel->update($request->validated());
 
             // A shared grade can contain Arabic and Languages students, so their
             // individual tracks must remain unchanged when it becomes "Both".

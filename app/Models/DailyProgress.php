@@ -1,6 +1,8 @@
 <?php
 namespace App\Models;
 
+use App\Enums\AttendanceStatus;
+use App\Enums\InteractionLevel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -9,7 +11,13 @@ class DailyProgress extends Model {
     protected $fillable = ['student_id', 'subject_id', 'teacher_id', 'schedule_id', 'date',
         'attendance_status', 'interaction_level', 'homework_submitted', 'score', 'comment'];
 
-    protected $casts = ['date' => 'date', 'homework_submitted' => 'boolean', 'score' => 'decimal:2'];
+    protected $casts = [
+        'date' => 'date',
+        'homework_submitted' => 'boolean',
+        'score' => 'decimal:2',
+        'attendance_status' => AttendanceStatus::class,
+        'interaction_level' => InteractionLevel::class,
+    ];
 
     public function student(): BelongsTo { return $this->belongsTo(Student::class); }
     public function subject(): BelongsTo { return $this->belongsTo(Subject::class); }

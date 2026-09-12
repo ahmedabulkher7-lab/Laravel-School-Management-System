@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SaveScheduleGridRequest;
 use App\Models\Schedule;
 use App\Models\GradeLevel;
 use App\Models\Subject;
@@ -41,61 +42,21 @@ class ScheduleController extends Controller
         return view('admin.schedules.index', compact('track', 'gradeLevels', 'selectedGrade', 'subjects', 'teacherOptions', 'slots', 'scheduleGrid'));
     }
 
-    public function saveGrid(Request $request)
+    public function saveGrid(SaveScheduleGridRequest $request, \App\Actions\Schedules\SaveScheduleGridAction $action)
     {
-        $validated = $request->validate([
-            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
-            'slots' => ['required', 'array', 'min:1'],
-            'slots.*.start_time' => ['required', 'date_format:H:i'],
-            'slots.*.end_time' => ['required', 'date_format:H:i'],
-            'cells' => ['nullable', 'array'],
-            'cells.*.subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
-            'cells.*.teacher_id' => ['nullable', 'integer', 'exists:teachers,id'],
-        ]);
-        foreach ($validated['slots'] as $slot) {
-            if ($slot['end_time'] <= $slot['start_time']) {
-                return back()->withInput()->withErrors(['slots' => 'وقت نهاية الحصة يجب أن يكون بعد وقت البداية.']);
-            }
-        }
+        $validated = $request->validated();
+        $gradeLevel = GradeLevel::with(['subjects:id', 'teachers.subjects'])->findOrFail($validated['grade_level_id']);
 
-        $gradeLevel = GradeLevel::with('subjects:id')->findOrFail($validated['grade_level_id']);
-        $entries = collect($validated['cells'] ?? [])->filter(fn (array $cell) => !empty($cell['subject_id']));
-        foreach ($entries as $cell) {
-            if (!$gradeLevel->subjects->contains('id', $cell['subject_id'])) {
-                return back()->withInput()->withErrors(['cells' => 'اختر مادة مرتبطة بالصف.']);
-            }
-            if (!empty($cell['teacher_id'])) {
-                $allowed = Teacher::query()->whereKey($cell['teacher_id'])
-                    ->whereHas('subjects', fn ($query) => $query->whereKey($cell['subject_id']))
-                    ->whereHas('gradeLevels', fn ($query) => $query->whereKey($gradeLevel->id))
-                    ->exists();
-                if (!$allowed) {
-                    return back()->withInput()->withErrors(['cells' => 'المدرس المختار غير مسند لهذه المادة أو لهذا الصف.']);
-                }
-            }
-        }
+        $action->execute(
+            gradeLevel: $gradeLevel,
+            slots: $validated['slots'],
+            cells: $validated['cells'] ?? []
+        );
 
-        DB::transaction(function () use ($gradeLevel, $validated, $entries): void {
-            Schedule::where('grade_level_id', $gradeLevel->id)->delete();
-            foreach ($entries as $cellKey => $cell) {
-                [$day, $slotIndex] = array_map('intval', explode('_', (string) $cellKey));
-                if (!array_key_exists($slotIndex, $validated['slots']) || $day < 0 || $day > 4) {
-                    continue;
-                }
-                $slot = $validated['slots'][$slotIndex];
-                Schedule::create([
-                    'grade_level_id' => $gradeLevel->id,
-                    'subject_id' => $cell['subject_id'],
-                    'teacher_id' => $cell['teacher_id'],
-                    'day_of_week' => $day,
-                    'start_time' => $slot['start_time'],
-                    'end_time' => $slot['end_time'],
-                ]);
-            }
-        });
-
-        return redirect()->route('admin.schedules.index', ['track' => $gradeLevel->track->value, 'grade_level_id' => $gradeLevel->id])
-            ->with('success', 'تم حفظ جدول الحصص للصف بنجاح.');
+        return redirect()->route('admin.schedules.index', [
+            'track' => $gradeLevel->track->value,
+            'grade_level_id' => $gradeLevel->id,
+        ])->with('success', 'تم حفظ جدول الحصص للصف بنجاح.');
     }
 
     private function timeSlotsFor(GradeLevel $gradeLevel)

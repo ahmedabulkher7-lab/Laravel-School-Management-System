@@ -128,17 +128,11 @@ class ReportController extends Controller
     /**
      * تحميل ZIP للتقارير المولَّدة مسبقاً فقط — سريع جداً.
      */
-    public function downloadAll(Request $request)
+    public function downloadAll(Request $request, \App\Actions\Reports\ExportWeeklyReportsArchive $archiveAction)
     {
         $request->validate(['week_start' => 'required|date']);
-
-        abort_unless(class_exists(ZipArchive::class), 500, 'امتداد ZIP غير متاح على الخادم.');
-
-        set_time_limit(120);
-
         $weekStart = Carbon::parse($request->week_start)->startOfDay();
 
-        // جلب التقارير الموجودة فقط — بدون توليد جديد
         $reports = WeeklyReport::with(['student.gradeLevel'])
             ->whereDate('week_start_date', $weekStart->toDateString())
             ->get()
@@ -148,61 +142,20 @@ class ReportController extends Controller
             return back()->with('error', 'لا توجد تقارير مولَّدة لهذا الأسبوع. اضغط "توليد التقارير" أولاً.');
         }
 
-        $temporaryDirectory = storage_path('app/private/report-archives');
-        File::ensureDirectoryExists($temporaryDirectory);
-        $archivePath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'weekly-reports-' . uniqid('', true) . '.zip';
-        $zip = new ZipArchive();
-
-        if ($zip->open($archivePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            abort(500, 'تعذر إنشاء ملف التقارير المضغوط.');
-        }
-
-        foreach ($reports as $report) {
-            $fileName = $this->buildReportFileName($report);
-            $zip->addFile(
-                Storage::path($report->file_path),
-                $fileName,
-            );
-        }
-
-        $zip->close();
-
-        return response()->download(
-            $archivePath,
-            "weekly-reports-{$weekStart->toDateString()}.zip",
-        )->deleteFileAfterSend(true);
+        return $archiveAction->execute($weekStart, $reports);
     }
 
-    private function streamDownload(WeeklyReport $report)
+    private function streamDownload(WeeklyReport $report, ?\App\Actions\Reports\ExportWeeklyReportsArchive $archiveAction = null)
     {
+        $archiveAction ??= app(\App\Actions\Reports\ExportWeeklyReportsArchive::class);
         $report->loadMissing(['student.gradeLevel']);
         abort_unless(Storage::exists($report->file_path), 404, 'الملف غير موجود');
         
-        $fileName = $this->buildReportFileName($report);
+        $fileName = $archiveAction->formatReportFileName($report);
         return Storage::download(
             $report->file_path,
             $fileName
         );
-    }
-
-    private function buildReportFileName(WeeklyReport $report): string
-    {
-        $student = $report->student;
-        $studentName = $student?->full_name ?? "طالب_{$report->student_id}";
-        $gradeName = $student?->gradeLevel?->name ?? '';
-        
-        $trackValue = $student?->gradeLevel?->track?->value ?? $student?->track?->value ?? $student?->track ?? '';
-        $trackLabel = $trackValue === 'languages' ? 'لغات' : ($trackValue === 'arabic' ? 'عربي' : '');
-
-        $date = $report->week_start_date instanceof Carbon
-            ? $report->week_start_date->format('Y-m-d')
-            : Carbon::parse($report->week_start_date)->format('Y-m-d');
-
-        $parts = array_filter([$studentName, $gradeName, $trackLabel, $date]);
-        $cleanName = implode(' ', $parts);
-        $cleanName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $cleanName);
-
-        return "{$cleanName}.pdf";
     }
 
     private function weekStart(?string $date): Carbon

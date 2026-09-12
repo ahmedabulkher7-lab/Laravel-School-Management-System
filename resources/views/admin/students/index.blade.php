@@ -28,7 +28,7 @@
                 @forelse($students as $student)
                 <tr>
                     <td style="font-weight:600;color:#0C7261;">{{ $student->full_name }}</td>
-                    <td><span class="badge badge-blue">{{ $student->gradeLevel->name }}</span></td>
+                    <td><x-badge variant="blue">{{ $student->gradeLevel->name }}</x-badge></td>
                     <td style="color:#475569;">{{ $student->user->email }}</td>
                     <td style="color:#475569;">{{ $student->enrollment_date->format('Y-m-d') }}</td>
                     <td style="text-align:center;">
