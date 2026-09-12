@@ -23,7 +23,7 @@ class TeacherController extends Controller
     public function create()
     {
         $this->authorize('create', Teacher::class);
-        $subjects = Subject::orderBy('name')->get();
+        $subjects = Subject::with('gradeLevels:id,track')->orderBy('name')->get();
         $gradeLevels = GradeLevel::orderBy('track')->orderBy('order')->get();
         $tracks = StudyTrack::cases();
         return view('admin.teachers.create', compact('subjects', 'gradeLevels', 'tracks'));
@@ -43,6 +43,7 @@ class TeacherController extends Controller
                 'user_id'   => $user->id,
                 'full_name' => $request->full_name,
                 'phone'     => $request->phone,
+                'track'     => $request->track,
             ]);
 
             $teacher->subjects()->sync($request->subject_ids);
@@ -56,11 +57,22 @@ class TeacherController extends Controller
     public function edit(Teacher $teacher)
     {
         $this->authorize('update', $teacher);
-        $subjects = Subject::orderBy('name')->get();
+        $subjects = Subject::with('gradeLevels:id,track')->orderBy('name')->get();
         $gradeLevels = GradeLevel::orderBy('track')->orderBy('order')->get();
         $tracks = StudyTrack::cases();
         $teacher->load(['subjects', 'gradeLevels']);
-        return view('admin.teachers.edit', compact('teacher', 'subjects', 'gradeLevels', 'tracks'));
+        $assignedTracks = $teacher->gradeLevels
+            ->map(fn (GradeLevel $gradeLevel) => $gradeLevel->track->value)
+            ->reject(fn (string $track) => $track === StudyTrack::Both->value)
+            ->unique()
+            ->values();
+        $selectedTeachingTrack = $assignedTracks->count() > 1
+            ? StudyTrack::Both->value
+            : ($assignedTracks->first() ?? $teacher->track ?? StudyTrack::Arabic->value);
+
+        return view('admin.teachers.edit', compact(
+            'teacher', 'subjects', 'gradeLevels', 'tracks', 'selectedTeachingTrack'
+        ));
     }
 
     public function update(StoreTeacherRequest $request, Teacher $teacher)
@@ -76,6 +88,7 @@ class TeacherController extends Controller
             $teacher->update([
                 'full_name' => $request->full_name,
                 'phone'     => $request->phone,
+                'track'     => $request->track,
             ]);
 
             $teacher->subjects()->sync($request->subject_ids);

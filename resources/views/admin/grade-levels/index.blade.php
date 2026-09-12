@@ -27,7 +27,14 @@
                 @forelse($gradeLevels as $gl)
                 <tr>
                     <td style="color:#475569;font-weight:700;">{{ $gl->order }}</td>
-                    <td style="font-weight:600;color:#0C7261;">{{ $gl->name }}</td>
+                    <td style="font-weight:600;color:#0C7261;">
+                        {{ $gl->name }}
+                        <div style="margin-top:0.35rem;">
+                            <span class="badge {{ $gl->track->value === 'arabic' ? 'badge-green' : ($gl->track->value === 'languages' ? 'badge-blue' : 'badge-purple') }}">
+                                {{ $gl->track->label() }}
+                            </span>
+                        </div>
+                    </td>
                     <td><span class="badge badge-purple">{{ $gl->students_count }} طالب</span></td>
                     <td style="text-align:center;">
                         <a href="{{ route('admin.grade-levels.edit', $gl) }}" class="btn-secondary" style="padding:0.4rem 0.6rem;font-size:0.8rem;color:#facc15;border-color:rgba(250,204,21,0.3);">

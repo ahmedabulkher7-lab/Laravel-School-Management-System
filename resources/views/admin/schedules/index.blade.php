@@ -1,86 +1,40 @@
 @extends('layouts.admin')
-@section('title', 'الجداول الدراسية')
-
+@section('title', 'جدول الحصص')
 @section('content')
-<div class="page-header">
-    <div>
-        <h1 class="page-title">الجداول الدراسية</h1>
-        <div class="page-subtitle">إدارة الحصص وجداول المراحل الدراسية</div>
-    </div>
-    <a href="{{ route('admin.schedules.create') }}" class="btn-primary">
-        <i class="fas fa-plus"></i> إضافة حصة جديدة
-    </a>
-</div>
+<div class="page-header"><div><h1 class="page-title">جدول الحصص الأسبوعي</h1><div class="page-subtitle">جدول مستقل لكل صف. اختر المادة في الخلية ليُحدّد المدرس المسند لها تلقائيًا.</div></div></div>
+<div class="card" style="margin-bottom:1.5rem;"><div class="card-body"><form method="GET" class="grid-2"><div class="form-group"><label class="form-label">المسار الدراسي</label><select name="track" class="form-select" onchange="this.form.submit()"><option value="">اختر المسار</option><option value="arabic" @selected($track === 'arabic')>عربي</option><option value="languages" @selected($track === 'languages')>لغات</option><option value="all" @selected($track === 'all')>عربي ولغات</option></select></div><div class="form-group"><label class="form-label">الصف الدراسي</label><select name="grade_level_id" class="form-select" onchange="this.form.submit()" @disabled(!$track)><option value="">اختر الصف</option>@foreach($gradeLevels->when($track && $track !== 'all', fn ($items) => $items->filter(fn ($grade) => $grade->track->value === $track)) as $grade)<option value="{{ $grade->id }}" @selected($selectedGrade?->id === $grade->id)>{{ $grade->name }}</option>@endforeach</select></div></form></div></div>
 
+@if($selectedGrade)
+<form method="POST" action="{{ route('admin.schedules.grid.save') }}" id="schedule-grid-form">@csrf<input type="hidden" name="grade_level_id" value="{{ $selectedGrade->id }}"><div class="card" style="overflow:auto;"><div class="card-body" style="min-width:1040px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><div><strong style="font-size:1.1rem;color:#0C7261;">{{ $selectedGrade->name }}</strong><span class="badge badge-blue" style="margin-right:.5rem;">{{ $selectedGrade->track->value === 'arabic' ? 'عربي' : 'لغات' }}</span></div><button type="submit" class="btn-primary"><i class="fas fa-save"></i> حفظ جدول الصف</button></div>@error('slots')<div class="alert-error">{{ $message }}</div>@enderror @error('cells')<div class="alert-error">{{ $message }}</div>@enderror
+<table class="data-table" style="table-layout:fixed;"><thead><tr><th style="width:150px;">وقت الحصة</th><th>الأحد</th><th>الإثنين</th><th>الثلاثاء</th><th>الأربعاء</th><th>الخميس</th></tr></thead><tbody>
+@foreach($slots as $slotIndex => $slot)<tr><td><input type="time" name="slots[{{ $slotIndex }}][start_time]" value="{{ old("slots.$slotIndex.start_time", $slot['start_time']) }}" class="form-input" style="padding:.35rem;"><div style="text-align:center;color:#64748b;margin:.2rem 0;">إلى</div><input type="time" name="slots[{{ $slotIndex }}][end_time]" value="{{ old("slots.$slotIndex.end_time", $slot['end_time']) }}" class="form-input" style="padding:.35rem;"></td>
+@foreach(range(0, 4) as $day)
 @php
-    $days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    $key = $day . '-' . $slot['start_time'] . '-' . $slot['end_time'];
+    $lesson = $scheduleGrid->get($key);
+    $cellKey = $day . '_' . $slotIndex;
+    $subjectId = old("cells.$cellKey.subject_id", $lesson?->subject_id);
+    $teacherId = old("cells.$cellKey.teacher_id", $lesson?->teacher_id);
 @endphp
-
-<!-- Filter -->
-<div class="card" style="margin-bottom:1.5rem;background:#ffffff;">
-    <div class="card-body" style="padding:1rem 1.5rem;">
-        <form method="GET" action="{{ route('admin.schedules.index') }}" style="display:flex;gap:1rem;align-items:flex-end;">
-            <div style="flex:1;">
-                <label class="form-label">تصفية حسب المرحلة</label>
-                <select name="grade_level_id" class="form-select" onchange="this.form.submit()">
-                    <option value="">-- جميع المراحل --</option>
-                    @foreach($gradeLevels as $gl)
-                        <option value="{{ $gl->id }}" {{ request('grade_level_id') == $gl->id ? 'selected' : '' }}>{{ $gl->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @if(request('grade_level_id'))
-                <a href="{{ route('admin.schedules.index') }}" class="btn-secondary" style="height:42px;display:flex;align-items:center;">إلغاء</a>
-            @endif
-        </form>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-body" style="padding:0;">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>المرحلة الدراسية</th>
-                    <th>اليوم</th>
-                    <th>الوقت</th>
-                    <th>المادة</th>
-                    <th>المعلم</th>
-                    <th style="text-align:center;">الإجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php
-                    $filteredSchedules = request('grade_level_id') 
-                        ? $schedules->where('grade_level_id', request('grade_level_id')) 
-                        : $schedules;
-                @endphp
-                @forelse($filteredSchedules as $schedule)
-                <tr>
-                    <td><span class="badge badge-blue">{{ $schedule->gradeLevel->name }}</span></td>
-                    <td style="font-weight:600;color:#0C7261;">{{ $days[$schedule->day_of_week] }}</td>
-                    <td style="color:#0C7261;direction:ltr;text-align:right;">
-                        {{ Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} - {{ Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}
-                    </td>
-                    <td>{{ $schedule->subject->name_ar ?? $schedule->subject->name }}</td>
-                    <td style="color:#475569;">{{ $schedule->teacher->full_name }}</td>
-                    <td style="text-align:center;">
-                        <a href="{{ route('admin.schedules.edit', $schedule) }}" class="btn-secondary" style="padding:0.4rem 0.6rem;font-size:0.8rem;color:#facc15;border-color:rgba(250,204,21,0.3);">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <form action="{{ route('admin.schedules.destroy', $schedule) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('هل أنت متأكد؟');">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn-secondary" style="padding:0.4rem 0.6rem;font-size:0.8rem;color:#f87171;border-color:rgba(248,113,113,0.3);">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="6" style="text-align:center;padding:2rem;">لا توجد حصص مجدولة.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
+<td style="vertical-align:top;"><select class="form-select subject-choice" name="cells[{{ $cellKey }}][subject_id]" data-cell="{{ $cellKey }}" style="font-size:.82rem;padding:.45rem;"><option value="">— فارغ / استراحة —</option>@foreach($subjects as $subject)<option value="{{ $subject->id }}" @selected((int) $subjectId === $subject->id)>{{ $subject->name_ar ?? $subject->name }}</option>@endforeach</select><input type="hidden" class="teacher-id" name="cells[{{ $cellKey }}][teacher_id]" value="{{ $teacherId }}"><div class="teacher-name" data-cell="{{ $cellKey }}" style="font-size:.75rem;color:#64748b;margin-top:.45rem;min-height:1.2rem;">{{ $lesson?->teacher?->full_name }}</div></td>
+@endforeach</tr>@endforeach
+</tbody></table></div></div></form>
+@else
+<div class="card" style="text-align:center;padding:2.5rem;color:#64748b;">اختر المسار ثم الصف لعرض جدول هذا الصف وتعديله.</div>
+@endif
 @endsection
+@push('scripts')
+<script>
+const teacherOptions = @json($teacherOptions);
+document.querySelectorAll('.subject-choice').forEach((select) => {
+  const refreshTeacher = () => {
+    const cell = select.dataset.cell, input = document.querySelector('.teacher-id[name="cells[' + cell + '][teacher_id]"]'), label = document.querySelector('.teacher-name[data-cell="' + cell + '"]'), options = teacherOptions[select.value] || [];
+    if (!select.value) { input.value = ''; label.textContent = ''; return; }
+    if (options.length === 1) { input.value = options[0].id; label.textContent = 'المدرس: ' + options[0].full_name; return; }
+    input.value = ''; label.textContent = options.length ? 'يوجد أكثر من مدرس لهذه المادة؛ راجع إسناد المدرسين.' : 'لا يوجد مدرس مسند لهذه المادة والصف.';
+  };
+  select.addEventListener('change', refreshTeacher);
+  if (!document.querySelector('.teacher-name[data-cell="' + select.dataset.cell + '"]').textContent.trim()) refreshTeacher();
+});
+</script>
+@endpush

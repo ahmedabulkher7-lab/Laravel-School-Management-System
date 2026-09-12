@@ -5,6 +5,7 @@ use Livewire\Component;
 use App\Models\DailyProgress;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\Schedule;
 use App\Models\User;
 use App\Notifications\AllProgressLogged;
 use App\Services\WeeklyReportService;
@@ -23,6 +24,8 @@ class DailyProgressLog extends Component
     public bool   $saved             = false;
     public ?int   $existingId        = null;
     public ?int   $subjectId         = null;
+    public ?int   $scheduleId        = null;
+    public bool   $isScheduledLesson  = false;
 
     protected function rules(): array
     {
@@ -47,14 +50,16 @@ class DailyProgressLog extends Component
         ];
     }
 
-    public function mount(int $studentId, int $teacherId): void
+    public function mount(int $studentId, int $teacherId, int $subjectId, ?int $scheduleId = null, ?string $lessonDate = null): void
     {
         $this->studentId = $studentId;
         $this->teacherId = $teacherId;
-        $this->date      = Carbon::today()->toDateString();
+        $this->subjectId = $subjectId;
+        $this->scheduleId = $scheduleId;
+        $this->isScheduledLesson = $scheduleId !== null;
+        $this->date      = $lessonDate ?: Carbon::today()->toDateString();
 
-        // Resolve the subject for this teacher based on the student's grade level subjects
-        $this->resolveSubjectId();
+        abort_unless($this->isAssignmentAllowed(), 403);
         $this->loadExisting();
     }
 
@@ -64,27 +69,36 @@ class DailyProgressLog extends Component
         $this->loadExisting();
     }
 
-    /**
-     * Pick the subject_id: use the first subject that both the teacher teaches
-     * AND is linked to the student's grade level.
-     */
-    private function resolveSubjectId(): void
+    /** Ensure this teacher can assess this student in the selected subject. */
+    private function isAssignmentAllowed(): bool
     {
-        $teacher = Teacher::with(['subjects', 'gradeLevels'])->find($this->teacherId);
+        if (auth()->user()?->teacher?->id !== $this->teacherId) {
+            return false;
+        }
+
+        $teacher = Teacher::find($this->teacherId);
         $student = Student::with('gradeLevel.subjects')->find($this->studentId);
 
         if (!$teacher || !$student || !$student->gradeLevel) {
-            $this->subjectId = null;
-            return;
+            return false;
         }
 
-        $teacherSubjectIds  = $teacher->subjects->pluck('id');
-        $gradeLevelSubjectIds = $student->gradeLevel->subjects->pluck('id');
+        $assignmentAllowed = $teacher->subjects()->whereKey($this->subjectId)->exists()
+            && $teacher->gradeLevels()->whereKey($student->grade_level_id)->exists()
+            && $student->gradeLevel->subjects->contains('id', $this->subjectId);
 
-        // Intersection: subjects teacher teaches that are also in the student's grade level
-        $shared = $teacherSubjectIds->intersect($gradeLevelSubjectIds);
+        if (!$assignmentAllowed || !$this->scheduleId) {
+            return $assignmentAllowed;
+        }
 
-        $this->subjectId = $shared->first();
+        return Schedule::query()
+            ->whereKey($this->scheduleId)
+            ->where('teacher_id', $this->teacherId)
+            ->where('subject_id', $this->subjectId)
+            ->where('grade_level_id', $student->grade_level_id)
+            ->where('day_of_week', Carbon::parse($this->date)->dayOfWeek)
+            ->whereDoesntHave('exceptions', fn ($query) => $query->whereDate('date', $this->date))
+            ->exists();
     }
 
     private function loadExisting(): void
@@ -96,6 +110,7 @@ class DailyProgressLog extends Component
 
         $existing = DailyProgress::where('student_id', $this->studentId)
             ->where('subject_id', $this->subjectId)
+            ->when($this->scheduleId, fn ($query) => $query->where('schedule_id', $this->scheduleId))
             ->whereDate('date', $this->date)
             ->first();
 
@@ -126,10 +141,13 @@ class DailyProgressLog extends Component
             return;
         }
 
+        abort_unless($this->isAssignmentAllowed(), 403);
+
         DailyProgress::updateOrCreate(
             [
                 'student_id' => $this->studentId,
                 'subject_id' => $this->subjectId,
+                'schedule_id' => $this->scheduleId,
                 'date'       => $this->date,
             ],
             [
@@ -146,6 +164,7 @@ class DailyProgressLog extends Component
         $this->existingId = DailyProgress::where([
             'student_id' => $this->studentId,
             'subject_id' => $this->subjectId,
+            'schedule_id' => $this->scheduleId,
         ])->whereDate('date', $this->date)->value('id');
 
         $weekStart = Carbon::parse($this->date)->startOfWeek(Carbon::SUNDAY)->startOfDay();
@@ -160,6 +179,10 @@ class DailyProgressLog extends Component
 
     private function notifyAdminIfAllLogged(Teacher $teacher): void
     {
+        if ($this->scheduleId) {
+            return;
+        }
+
         // Count students in this teacher's grade levels
         $assignedCount = Student::whereIn('grade_level_id',
             $teacher->gradeLevels()->pluck('grade_levels.id')

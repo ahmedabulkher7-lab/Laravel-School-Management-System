@@ -5,16 +5,14 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">إضافة معلم جديد</h1>
-        <div class="page-subtitle">تسجيل معلم جديد وتحديد المادة والمراحل</div>
+        <div class="page-subtitle">حدد مسار التدريس، ثم المواد والصفوف التابعة له</div>
     </div>
-    <a href="{{ route('admin.teachers.index') }}" class="btn-secondary">
-        <i class="fas fa-arrow-right"></i> عودة للقائمة
-    </a>
+    <a href="{{ route('admin.teachers.index') }}" class="btn-secondary"><i class="fas fa-arrow-right"></i> عودة للقائمة</a>
 </div>
 
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('admin.teachers.store') }}" method="POST">
+        <form action="{{ route('admin.teachers.store') }}" method="POST" data-teacher-track-form>
             @csrf
 
             <div class="section-title">بيانات الدخول</div>
@@ -45,105 +43,88 @@
                 </div>
             </div>
 
+            @php $selectedTeachingTrack = old('track', 'arabic'); @endphp
             <div class="section-title">الاختصاص الأكاديمي</div>
+            <div class="form-group" style="margin-bottom:1.5rem;">
+                <label class="form-label">مسار تدريس المعلم <span style="color:#ef4444">*</span></label>
+                <p style="margin:.25rem 0 .85rem;color:#64748b;font-size:.82rem;">اختيارك هنا يحدد المواد والصفوف التي يمكن إسنادها للمعلم.</p>
+                <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+                    @foreach(['arabic' => ['📚', 'عربي'], 'languages' => ['🌐', 'لغات'], 'both' => ['📚🌐', 'عربي ولغات']] as $value => [$icon, $label])
+                        <label style="display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border:1px solid #cbd5e1;border-radius:.7rem;cursor:pointer;background:#f8fafc;">
+                            <input type="radio" name="track" value="{{ $value }}" data-teaching-track {{ $selectedTeachingTrack === $value ? 'checked' : '' }} style="accent-color:#0C7261;">
+                            <span>{{ $icon }} {{ $label }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('track') <span class="form-error">{{ $message }}</span> @enderror
+            </div>
+
             <div class="grid-2">
                 <div class="form-group">
                     <label class="form-label">المواد التي يدرسها <span style="color:#ef4444">*</span></label>
-                    <div style="background:#f8fafc;border:1px solid rgba(71,85,105,0.6);border-radius:0.75rem;padding:1rem;display:flex;flex-wrap:wrap;gap:1rem;">
+                    <div style="background:#f8fafc;border:1px solid rgba(71,85,105,.6);border-radius:.75rem;padding:1rem;display:flex;flex-wrap:wrap;gap:.75rem;">
                         @php $assignedSubjects = old('subject_ids', []); @endphp
-                        @foreach($subjects as $subj)
-                        <label style="display:flex;align-items:center;gap:0.4rem;color:#475569;cursor:pointer;">
-                            <input type="checkbox" name="subject_ids[]" value="{{ $subj->id }}"
-                                {{ in_array($subj->id, $assignedSubjects) ? 'checked' : '' }}
-                                style="accent-color:#0C7261;width:16px;height:16px;">
-                            {{ $subj->name_ar ?? $subj->name }}
-                        </label>
+                        @foreach($subjects as $subject)
+                            @php $subjectTracks = $subject->gradeLevels->pluck('track')->map(fn ($track) => $track->value)->unique()->join(','); @endphp
+                            <label data-subject-option data-tracks="{{ $subjectTracks }}" style="display:flex;align-items:center;gap:.4rem;color:#475569;cursor:pointer;">
+                                <input type="checkbox" name="subject_ids[]" value="{{ $subject->id }}" {{ in_array($subject->id, $assignedSubjects) ? 'checked' : '' }} style="accent-color:#0C7261;width:16px;height:16px;">
+                                {{ $subject->name_ar ?? $subject->name }}
+                            </label>
                         @endforeach
                     </div>
                     @error('subject_ids') <span class="form-error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">المراحل الدراسية المصرح له بتدريسها <span style="color:#ef4444">*</span></label>
-
-                    {{-- Track Filter Buttons --}}
-                    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;">
-                        <button type="button" onclick="filterGrades('all')" id="filter-all"
-                                style="padding:0.3rem 0.9rem;border-radius:2rem;border:2px solid #0C7261;
-                                       background:#0C7261;color:white;font-size:0.8rem;font-weight:600;cursor:pointer;
-                                       font-family:inherit;transition:all 0.2s;">
-                            🔍 الكل
-                        </button>
-                        @foreach($tracks as $trackItem)
-                        <button type="button" onclick="filterGrades('{{ $trackItem->value }}')" id="filter-{{ $trackItem->value }}"
-                                style="padding:0.3rem 0.9rem;border-radius:2rem;border:2px solid #cbd5e1;
-                                       background:white;color:#475569;font-size:0.8rem;font-weight:600;cursor:pointer;
-                                       font-family:inherit;transition:all 0.2s;">
-                            {{ $trackItem->value === 'arabic' ? '📚' : '🌐' }} {{ $trackItem->label() }}
-                        </button>
-                        @endforeach
-                    </div>
-
-                    <div id="grade-levels-container" style="background:#f8fafc;border:1px solid rgba(71,85,105,0.6);border-radius:0.75rem;padding:1rem;">
-                        @foreach($gradeLevels as $gl)
-                        <label class="grade-label"
-                               data-track="{{ $gl->track->value ?? $gl->track }}"
-                               style="display:flex;align-items:center;gap:0.4rem;color:#475569;cursor:pointer;
-                                      padding:0.3rem 0.5rem;border-radius:0.5rem;transition:background 0.15s;
-                                      margin-bottom:0.25rem;">
-                            <input type="checkbox" name="grade_level_ids[]" value="{{ $gl->id }}"
-                                {{ in_array($gl->id, old('grade_level_ids', [])) ? 'checked' : '' }}
-                                style="accent-color:#0C7261;width:16px;height:16px;flex-shrink:0;">
-                            <span>{{ $gl->name }}</span>
-                            <span style="font-size:0.7rem;color:#94a3b8;margin-right:auto;
-                                         background:{{ ($gl->track->value ?? $gl->track) === 'arabic' ? 'rgba(5,150,105,0.1)' : 'rgba(37,99,235,0.1)' }};
-                                         color:{{ ($gl->track->value ?? $gl->track) === 'arabic' ? '#065f46' : '#1e40af' }};
-                                         padding:0.1rem 0.5rem;border-radius:2rem;">
-                                {{ ($gl->track->value ?? $gl->track) === 'arabic' ? 'عربي' : 'لغات' }}
-                            </span>
-                        </label>
+                    <label class="form-label">الصفوف المصرح له بتدريسها <span style="color:#ef4444">*</span></label>
+                    <div style="background:#f8fafc;border:1px solid rgba(71,85,105,.6);border-radius:.75rem;padding:1rem;">
+                        @foreach($gradeLevels as $gradeLevel)
+                            @php $gradeTrack = $gradeLevel->track->value; @endphp
+                            <label data-grade-option data-track="{{ $gradeTrack }}" style="display:flex;align-items:center;gap:.4rem;color:#475569;cursor:pointer;padding:.3rem .5rem;border-radius:.5rem;margin-bottom:.25rem;">
+                                <input type="checkbox" name="grade_level_ids[]" value="{{ $gradeLevel->id }}" {{ in_array($gradeLevel->id, old('grade_level_ids', [])) ? 'checked' : '' }} style="accent-color:#0C7261;width:16px;height:16px;flex-shrink:0;">
+                                <span>{{ $gradeLevel->name }}</span>
+                                <span style="font-size:.7rem;color:{{ $gradeTrack === 'arabic' ? '#065f46' : ($gradeTrack === 'languages' ? '#1e40af' : '#7e22ce') }};margin-right:auto;">{{ $gradeLevel->track->label() }}</span>
+                            </label>
                         @endforeach
                     </div>
                     @error('grade_level_ids') <span class="form-error">{{ $message }}</span> @enderror
                 </div>
             </div>
 
-            <div style="margin-top:1.5rem;text-align:left;">
-                <button type="submit" class="btn-primary"><i class="fas fa-save"></i> حفظ البيانات</button>
-            </div>
+            <div style="margin-top:1.5rem;text-align:left;"><button type="submit" class="btn-primary"><i class="fas fa-save"></i> حفظ البيانات</button></div>
         </form>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
-function filterGrades(track) {
-    const labels = document.querySelectorAll('.grade-label');
-    const buttons = document.querySelectorAll('[id^="filter-"]');
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('[data-teacher-track-form]');
+    if (!form) return;
 
-    // Reset all buttons
-    buttons.forEach(btn => {
-        btn.style.background = 'white';
-        btn.style.color = '#475569';
-        btn.style.borderColor = '#cbd5e1';
-    });
+    const allowedTracks = () => {
+        const value = form.querySelector('[data-teaching-track]:checked')?.value;
+        return value === 'both' ? ['arabic', 'languages'] : [value];
+    };
+    const updateOptions = () => {
+        const allowed = allowedTracks();
+        form.querySelectorAll('[data-subject-option]').forEach((option) => {
+            const matches = option.dataset.tracks.split(',').some((track) => track === 'both' || allowed.includes(track));
+            option.hidden = !matches;
+            option.querySelector('input').disabled = !matches;
+            if (!matches) option.querySelector('input').checked = false;
+        });
+        form.querySelectorAll('[data-grade-option]').forEach((option) => {
+            const matches = option.dataset.track === 'both' || allowed.includes(option.dataset.track);
+            option.hidden = !matches;
+            option.querySelector('input').disabled = !matches;
+            if (!matches) option.querySelector('input').checked = false;
+        });
+    };
 
-    // Activate selected button
-    const activeBtn = document.getElementById('filter-' + track);
-    if (activeBtn) {
-        activeBtn.style.background = '#0C7261';
-        activeBtn.style.color = 'white';
-        activeBtn.style.borderColor = '#0C7261';
-    }
-
-    labels.forEach(label => {
-        if (track === 'all' || label.dataset.track === track) {
-            label.style.display = 'flex';
-        } else {
-            label.style.display = 'none';
-        }
-    });
-}
+    form.querySelectorAll('[data-teaching-track]').forEach((input) => input.addEventListener('change', updateOptions));
+    updateOptions();
+});
 </script>
 @endpush
-@endsection

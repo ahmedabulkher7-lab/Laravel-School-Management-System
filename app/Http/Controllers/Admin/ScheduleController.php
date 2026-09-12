@@ -7,15 +7,108 @@ use App\Models\GradeLevel;
 use App\Models\Subject;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ScheduleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $schedules   = Schedule::with(['gradeLevel', 'subject', 'teacher'])
-            ->orderBy('grade_level_id')->orderBy('day_of_week')->orderBy('start_time')->get();
-        $gradeLevels = GradeLevel::orderBy('order')->get();
-        return view('admin.schedules.index', compact('schedules', 'gradeLevels'));
+        $track = $request->query('track');
+        $gradeLevels = GradeLevel::query()->orderBy('track')->orderBy('order')->get();
+        $selectedGrade = $gradeLevels->firstWhere('id', (int) $request->query('grade_level_id'));
+        if ($selectedGrade && $track && $track !== 'all' && $selectedGrade->track->value !== $track) {
+            $selectedGrade = null;
+        }
+
+        $subjects = $selectedGrade ? $selectedGrade->subjects()->orderBy('name')->get() : collect();
+        $teacherOptions = $subjects->mapWithKeys(function (Subject $subject) use ($selectedGrade): array {
+            $teachers = Teacher::query()
+                ->whereHas('subjects', fn ($query) => $query->whereKey($subject->id))
+                ->whereHas('gradeLevels', fn ($query) => $query->whereKey($selectedGrade->id))
+                ->orderBy('full_name')->get(['id', 'full_name']);
+
+            return [$subject->id => $teachers];
+        });
+        $slots = $selectedGrade
+            ? $this->timeSlotsFor($selectedGrade)
+            : collect();
+        $scheduleGrid = $selectedGrade
+            ? Schedule::query()->where('grade_level_id', $selectedGrade->id)->get()
+                ->keyBy(fn (Schedule $schedule) => $schedule->day_of_week . '-' . $schedule->start_time->format('H:i') . '-' . $schedule->end_time->format('H:i'))
+            : collect();
+
+        return view('admin.schedules.index', compact('track', 'gradeLevels', 'selectedGrade', 'subjects', 'teacherOptions', 'slots', 'scheduleGrid'));
+    }
+
+    public function saveGrid(Request $request)
+    {
+        $validated = $request->validate([
+            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
+            'slots' => ['required', 'array', 'min:1'],
+            'slots.*.start_time' => ['required', 'date_format:H:i'],
+            'slots.*.end_time' => ['required', 'date_format:H:i'],
+            'cells' => ['nullable', 'array'],
+            'cells.*.subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
+            'cells.*.teacher_id' => ['nullable', 'integer', 'exists:teachers,id'],
+        ]);
+        foreach ($validated['slots'] as $slot) {
+            if ($slot['end_time'] <= $slot['start_time']) {
+                return back()->withInput()->withErrors(['slots' => 'وقت نهاية الحصة يجب أن يكون بعد وقت البداية.']);
+            }
+        }
+
+        $gradeLevel = GradeLevel::with('subjects:id')->findOrFail($validated['grade_level_id']);
+        $entries = collect($validated['cells'] ?? [])->filter(fn (array $cell) => !empty($cell['subject_id']));
+        foreach ($entries as $cell) {
+            if (!$gradeLevel->subjects->contains('id', $cell['subject_id'])) {
+                return back()->withInput()->withErrors(['cells' => 'اختر مادة مرتبطة بالصف.']);
+            }
+            if (!empty($cell['teacher_id'])) {
+                $allowed = Teacher::query()->whereKey($cell['teacher_id'])
+                    ->whereHas('subjects', fn ($query) => $query->whereKey($cell['subject_id']))
+                    ->whereHas('gradeLevels', fn ($query) => $query->whereKey($gradeLevel->id))
+                    ->exists();
+                if (!$allowed) {
+                    return back()->withInput()->withErrors(['cells' => 'المدرس المختار غير مسند لهذه المادة أو لهذا الصف.']);
+                }
+            }
+        }
+
+        DB::transaction(function () use ($gradeLevel, $validated, $entries): void {
+            Schedule::where('grade_level_id', $gradeLevel->id)->delete();
+            foreach ($entries as $cellKey => $cell) {
+                [$day, $slotIndex] = array_map('intval', explode('_', (string) $cellKey));
+                if (!array_key_exists($slotIndex, $validated['slots']) || $day < 0 || $day > 4) {
+                    continue;
+                }
+                $slot = $validated['slots'][$slotIndex];
+                Schedule::create([
+                    'grade_level_id' => $gradeLevel->id,
+                    'subject_id' => $cell['subject_id'],
+                    'teacher_id' => $cell['teacher_id'],
+                    'day_of_week' => $day,
+                    'start_time' => $slot['start_time'],
+                    'end_time' => $slot['end_time'],
+                ]);
+            }
+        });
+
+        return redirect()->route('admin.schedules.index', ['track' => $gradeLevel->track->value, 'grade_level_id' => $gradeLevel->id])
+            ->with('success', 'تم حفظ جدول الحصص للصف بنجاح.');
+    }
+
+    private function timeSlotsFor(GradeLevel $gradeLevel)
+    {
+        $saved = Schedule::where('grade_level_id', $gradeLevel->id)->orderBy('start_time')->get(['start_time', 'end_time'])
+            ->map(fn (Schedule $schedule) => ['start_time' => $schedule->start_time->format('H:i'), 'end_time' => $schedule->end_time->format('H:i')])
+            ->unique(fn (array $slot) => $slot['start_time'] . $slot['end_time'])->values();
+
+        return $saved->isNotEmpty() ? $saved : collect([
+            ['start_time' => '08:00', 'end_time' => '08:50'], ['start_time' => '08:50', 'end_time' => '09:40'],
+            ['start_time' => '09:40', 'end_time' => '10:30'], ['start_time' => '10:30', 'end_time' => '11:20'],
+            ['start_time' => '11:20', 'end_time' => '12:10'], ['start_time' => '12:10', 'end_time' => '13:00'],
+        ]);
     }
 
     public function create()

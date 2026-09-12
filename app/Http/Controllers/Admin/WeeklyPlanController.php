@@ -22,10 +22,23 @@ class WeeklyPlanController extends Controller
             ->get();
         $plans = $this->plansFor($weekStart, $gradeLevels);
         $summaries = $gradeLevels->map(fn ($gradeLevel) => $this->summary($gradeLevel, $plans));
+        $status = request('status', 'all');
+
+        if (!in_array($status, ['all', 'complete', 'incomplete'], true)) {
+            $status = 'all';
+        }
+
+        if ($status !== 'all') {
+            $showComplete = $status === 'complete';
+            $summaries = $summaries
+                ->filter(fn (array $summary) => $summary['complete'] === $showComplete)
+                ->values();
+        }
+
         $tracks = StudyTrack::cases();
 
         return view('admin.weekly-plans.index', compact(
-            'weekStart', 'track', 'tracks', 'summaries'
+            'weekStart', 'track', 'status', 'tracks', 'summaries'
         ));
     }
 
@@ -46,12 +59,23 @@ class WeeklyPlanController extends Controller
         ], [], [
             'mode' => 'utf-8',
             'format' => 'A4',
-            'autoScriptToLang' => true,
-            'autoLangToFont' => true,
+            'default_font' => 'alexandria',
+            'custom_font_dir' => resource_path('fonts'),
+            'custom_font_data' => [
+                'alexandria' => [
+                    'R' => 'Alexandria.ttf',
+                    'B' => 'Alexandria.ttf',
+                    'I' => 'Alexandria.ttf',
+                    'BI' => 'Alexandria.ttf',
+                    'useOTL' => 0x80,
+                ],
+            ],
+            'autoScriptToLang' => false,
+            'autoLangToFont' => false,
             'autoArabic' => true,
             'show_watermark_image' => true,
-            'watermark_image_path' => public_path('images/logo.jpg'),
-            'watermark_image_alpha' => 0.3,
+            'watermark_image_path' => public_path('images/Blue Beige Minimal Professional Business Weekly Report.png'),
+            'watermark_image_alpha' => 0.09,
             'watermark_image_size' => 'D',
             'watermark_image_position' => 'P',
         ]);

@@ -6,12 +6,14 @@ enum StudyTrack: string
 {
     case Arabic = 'arabic';
     case Languages = 'languages';
+    case Both = 'both';
 
     public function label(): string
     {
         return match ($this) {
-            self::Arabic => 'Arabic',
-            self::Languages => 'english',
+            self::Arabic => 'عربي',
+            self::Languages => 'لغات',
+            self::Both => 'عربي ولغات',
         };
     }
 
@@ -20,4 +22,5 @@ enum StudyTrack: string
     {
         return array_column(self::cases(), 'value');
     }
+
 }

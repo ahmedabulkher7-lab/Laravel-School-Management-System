@@ -40,12 +40,8 @@ class StudentController extends Controller
             Student::create([
                 'user_id'         => $user->id,
                 'full_name'       => $request->full_name,
-                'date_of_birth'   => $request->date_of_birth,
                 'grade_level_id'  => $request->grade_level_id,
                 'track'           => $request->track,
-                'guardian_name'   => $request->guardian_name,
-                'guardian_phone'  => $request->guardian_phone,
-                'phone'           => $request->phone,
                 'enrollment_date' => $request->enrollment_date,
             ]);
         });

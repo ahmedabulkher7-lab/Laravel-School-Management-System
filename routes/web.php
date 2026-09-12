@@ -36,14 +36,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 
     // Schedule
     Route::resource('schedules', Admin\ScheduleController::class);
+    Route::post('schedules/grid', [Admin\ScheduleController::class, 'saveGrid'])->name('schedules.grid.save');
 
     // Progress view (read-only for admin)
     Route::get('/progress', [Admin\ProgressController::class, 'index'])->name('progress.index');
+    Route::get('/teacher-evaluation-status', [Admin\TeacherEvaluationStatusController::class, 'index'])->name('teacher-evaluation-status.index');
 
     // Reports
     Route::get('/reports', [Admin\ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/generate/{student}', [Admin\ReportController::class, 'generate'])->name('reports.generate');
+    Route::get('/reports/students/{student}/download', [Admin\ReportController::class, 'downloadStudent'])->name('reports.student-download');
+    Route::get('/reports/download-all', [Admin\ReportController::class, 'downloadAll'])->name('reports.download-all');
     Route::get('/reports/download/{report}', [Admin\ReportController::class, 'download'])->name('reports.download');
+    // توليد جماعي في الخلفية
+    Route::post('/reports/generate-all', [Admin\ReportController::class, 'generateAll'])->name('reports.generate-all');
+    Route::get('/reports/generate-status', [Admin\ReportController::class, 'generateStatus'])->name('reports.generate-status');
 
     // Weekly plans
     Route::get('/weekly-plans', [Admin\WeeklyPlanController::class, 'index'])->name('weekly-plans.index');
@@ -58,9 +65,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 // ─── Teacher Routes ───────────────────────────────────────────────────────────
 Route::prefix('teacher')->name('teacher.')->middleware(['auth', 'role:teacher'])->group(function () {
     Route::get('/dashboard', [Teacher\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/account/password', [Teacher\AccountController::class, 'edit'])->name('account.password.edit');
+    Route::put('/account/password', [Teacher\AccountController::class, 'update'])->name('account.password.update');
     Route::get('/students', [Teacher\StudentController::class, 'index'])->name('students.index');
     Route::get('/progress/log', [Teacher\ProgressController::class, 'log'])->name('progress.log');
     Route::get('/progress/history', [Teacher\ProgressController::class, 'history'])->name('progress.history');
+    Route::get('/lessons', [Teacher\ScheduledLessonController::class, 'index'])->name('lessons.index');
+    Route::get('/lessons/{schedule}', [Teacher\ScheduledLessonController::class, 'show'])->name('lessons.show');
     Route::get('/weekly-plans', [Teacher\WeeklyPlanController::class, 'index'])->name('weekly-plans.index');
     Route::post('/weekly-plans/{gradeLevel}', [Teacher\WeeklyPlanController::class, 'store'])->name('weekly-plans.store');
     Route::get('/notifications', [Teacher\NotificationController::class, 'index'])->name('notifications.index');

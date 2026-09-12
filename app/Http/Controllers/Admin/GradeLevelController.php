@@ -1,57 +1,92 @@
 <?php
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\StudyTrack;
 use App\Http\Controllers\Controller;
 use App\Models\GradeLevel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class GradeLevelController extends Controller
 {
     public function index()
     {
-        $gradeLevels = GradeLevel::withCount('students')->orderBy('order')->get();
+        $gradeLevels = GradeLevel::withCount('students')->orderBy('track')->orderBy('order')->get();
         return view('admin.grade-levels.index', compact('gradeLevels'));
     }
 
     public function create()
     {
-        return view('admin.grade-levels.create');
+        $tracks = StudyTrack::cases();
+
+        return view('admin.grade-levels.create', compact('tracks'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name'  => 'required|string|max:100|unique:grade_levels,name',
+            'name'  => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('grade_levels', 'name')->where('track', $request->input('track')),
+            ],
             'order' => 'required|integer|min:1',
+            'track' => ['required', Rule::enum(StudyTrack::class)],
         ], [
             'name.required' => 'اسم المرحلة مطلوب',
             'name.unique'   => 'هذه المرحلة موجودة مسبقاً',
             'order.required'=> 'الترتيب مطلوب',
         ]);
 
-        GradeLevel::create($request->only('name', 'order'));
+        GradeLevel::create($request->only('name', 'order', 'track'));
         return redirect()->route('admin.grade-levels.index')
             ->with('success', 'تم إضافة المرحلة الدراسية بنجاح');
     }
 
     public function edit(GradeLevel $gradeLevel)
     {
-        return view('admin.grade-levels.edit', compact('gradeLevel'));
+        $tracks = StudyTrack::cases();
+
+        return view('admin.grade-levels.edit', compact('gradeLevel', 'tracks'));
     }
 
     public function update(Request $request, GradeLevel $gradeLevel)
     {
         $request->validate([
-            'name'  => 'required|string|max:100|unique:grade_levels,name,' . $gradeLevel->id,
+            'name'  => [
+                'required',  
+                'string',
+                'max:100',
+                Rule::unique('grade_levels', 'name')
+                    ->ignore($gradeLevel->id)
+                    ->where('track', $request->input('track')),
+            ],
             'order' => 'required|integer|min:1',
+            'track' => ['required', Rule::enum(StudyTrack::class)],
         ]);
-        $gradeLevel->update($request->only('name', 'order'));
+
+        DB::transaction(function () use ($request, $gradeLevel): void {
+            $gradeLevel->update($request->only('name', 'order', 'track'));
+
+            // A shared grade can contain Arabic and Languages students, so their
+            // individual tracks must remain unchanged when it becomes "Both".
+            if ($request->input('track') !== StudyTrack::Both->value) {
+                $gradeLevel->students()->update(['track' => $request->input('track')]);
+            }
+        });
         return redirect()->route('admin.grade-levels.index')
             ->with('success', 'تم تحديث المرحلة بنجاح');
     }
 
     public function destroy(GradeLevel $gradeLevel)
     {
+        if ($gradeLevel->students()->exists()) {
+            return redirect()->route('admin.grade-levels.index')
+                ->with('warning', 'لا يمكن حذف هذا الصف لأنه مرتبط بطلاب. انقل الطلاب إلى صف آخر أولاً.');
+        }
+
         $gradeLevel->delete();
         return redirect()->route('admin.grade-levels.index')
             ->with('success', 'تم حذف المرحلة بنجاح');

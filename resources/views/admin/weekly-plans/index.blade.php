@@ -23,6 +23,14 @@
                 @endforeach
             </select>
         </div>
+        <div>
+            <label class="form-label" style="font-size:0.78rem;">حالة الخطة</label>
+            <select name="status" class="form-select" style="min-width:130px;">
+                <option value="all" {{ $status === 'all' ? 'selected' : '' }}>كل الحالات</option>
+                <option value="complete" {{ $status === 'complete' ? 'selected' : '' }}>مكتمل</option>
+                <option value="incomplete" {{ $status === 'incomplete' ? 'selected' : '' }}>غير مكتمل</option>
+            </select>
+        </div>
         <button class="btn-primary" type="submit"><i class="fas fa-filter"></i> عرض</button>
     </form>
 </div>

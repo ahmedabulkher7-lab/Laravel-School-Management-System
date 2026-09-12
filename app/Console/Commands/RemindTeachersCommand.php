@@ -3,8 +3,8 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Teacher;
-use App\Models\DailyProgress;
 use App\Notifications\TeacherProgressReminder;
+use App\Services\ScheduledEvaluationService;
 use Carbon\Carbon;
 
 class RemindTeachersCommand extends Command
@@ -16,17 +16,11 @@ class RemindTeachersCommand extends Command
     {
         $today = Carbon::today()->toDateString();
 
-        Teacher::with(['students', 'user'])->get()->each(function (Teacher $teacher) use ($today) {
+        $evaluations = app(ScheduledEvaluationService::class);
+        Teacher::with('user')->get()->each(function (Teacher $teacher) use ($today, $evaluations) {
             if (!$teacher->user) return;
 
-            $assignedCount = $teacher->students()->count();
-            if ($assignedCount === 0) return;
-
-            $loggedCount = DailyProgress::where('teacher_id', $teacher->id)
-                ->whereDate('date', $today)
-                ->count();
-
-            $missing = $assignedCount - $loggedCount;
+            $missing = $evaluations->lessonsForTeacher($teacher, Carbon::parse($today))->sum('remaining');
 
             if ($missing > 0) {
                 $teacher->user->notify(new TeacherProgressReminder($today, $missing));

@@ -16,12 +16,12 @@ class StoreStudentRequest extends FormRequest
         $userId = $this->route('student')?->user_id;
         return [
             'full_name'       => 'required|string|max:255',
-            'date_of_birth'   => 'required|date|before:today',
+            
             'grade_level_id'  => 'required|exists:grade_levels,id',
             'track'           => ['required', Rule::enum(StudyTrack::class)],
-            'guardian_name'   => 'required|string|max:255',
-            'guardian_phone'  => 'required|string|max:20',
-            'phone'           => 'nullable|string|max:20',
+            // 'guardian_name'   => 'required|string|max:255',
+            // 'guardian_phone'  => 'required|string|max:20',
+            // 'phone'           => 'nullable|string|max:20',
             'enrollment_date' => 'required|date',
             'email'           => "required|email|unique:users,email,{$userId},id",
             'password'        => $studentId ? 'nullable|min:8' : 'required|min:8',
@@ -36,8 +36,11 @@ class StoreStudentRequest extends FormRequest
             }
 
             $gradeLevel = GradeLevel::find($this->input('grade_level_id'));
-            if ($gradeLevel && $gradeLevel->track->value !== $this->input('track')) {
-                $validator->errors()->add('track', 'The student study track must match the selected grade level.');
+            if ($gradeLevel && !in_array($gradeLevel->track->value, [$this->input('track'), StudyTrack::Both->value], true)) {
+                $validator->errors()->add(
+                    'grade_level_id',
+                    'المرحلة المختارة تتبع قسماً مختلفاً. اختر مرحلة من نفس القسم المحدد.'
+                );
             }
         });
     }

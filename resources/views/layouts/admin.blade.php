@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -15,8 +17,10 @@
 </head>
 <body style="display:flex;min-height:100vh;">
 
+    <div class="sidebar-backdrop" data-nav-backdrop hidden></div>
+
     <!-- Sidebar (right for RTL) -->
-    <aside class="sidebar">
+    <aside id="site-navigation" class="sidebar" data-site-navigation>
         <!-- Logo & branding -->
         <div style="text-align:center;padding:0.5rem 0 1.75rem;">
             <img src="{{ asset('images/logo.png') }}" alt="شعار المدرسة"
@@ -55,13 +59,21 @@
                class="sidebar-link {{ request()->routeIs('admin.grade-levels.*') ? 'active' : '' }}">
                 <i class="fas fa-layer-group"></i> المراحل الدراسية
             </a>
-
+            <a href="{{ route('admin.schedules.index') }}"
+               class="sidebar-link {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}">
+                <i class="fas fa-calendar-alt"></i> جدول الحصص
+            </a>
+    
     
 
             <div class="section-title">المتابعة</div>
             <a href="{{ route('admin.progress.index') }}"
                class="sidebar-link {{ request()->routeIs('admin.progress.*') ? 'active' : '' }}">
                 <i class="fas fa-chart-line"></i> سجلات التقدم
+            </a>
+            <a href="{{ route('admin.teacher-evaluation-status.index') }}"
+               class="sidebar-link {{ request()->routeIs('admin.teacher-evaluation-status.*') ? 'active' : '' }}">
+                <i class="fas fa-user-check"></i> متابعة تقييمات المدرسين
             </a>
             <a href="{{ route('admin.reports.index') }}"
                class="sidebar-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
@@ -102,8 +114,15 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main style="margin-right:260px;flex:1;padding:2rem;min-height:100vh;max-width:calc(100vw - 260px);">
+    <div class="app-shell">
+        <div class="mobile-topbar">
+            <span class="mobile-topbar-title">لوحة المدير</span>
+            <button type="button" class="mobile-menu-btn" data-nav-toggle data-nav-open-label="فتح القائمة" data-nav-close-label="إغلاق القائمة" aria-controls="site-navigation" aria-expanded="false" aria-label="فتح القائمة">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <main class="main-content">
 
         @if(session('success'))
             <div class="alert-success">
@@ -117,9 +136,16 @@
                 {{ session('error') }}
             </div>
         @endif
+        @if(session('warning'))
+            <div class="alert-warning">
+                <i class="fas fa-triangle-exclamation"></i>
+                {{ session('warning') }}
+            </div>
+        @endif
 
         @yield('content')
-    </main>
+        </main>
+    </div>
 
     @livewireScripts
     @stack('scripts')

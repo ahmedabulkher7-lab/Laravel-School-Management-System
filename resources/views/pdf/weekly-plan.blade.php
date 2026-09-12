@@ -2,75 +2,347 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>الجدول الأسبوعي - {{ $gradeLevel->name }}</title>
+    <title>الخطة الأسبوعية - {{ $gradeLevel->name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        @page { margin: 28px 35px; }
-        body { font-family: 'xbriyaz', sans-serif; direction: rtl; color:#222; font-size:12px; }
-        .header { text-align:center; border-bottom:2px solid #0C7261; padding-bottom:10px; margin-bottom:16px; }
-        .logo { width:58px; height:58px; object-fit:contain; }
-        h1 { color:#0C7261; font-size:20px; margin:3px 0; }
-        .meta { color:#475569; font-size:11px; }
-        .info { width:100%; margin-bottom:14px; border-collapse:collapse; }
-        .info td { background:#f1f5f9; border:1px solid #cbd5e1; padding:7px; }
-        .label { color:#475569; font-weight:bold; width:110px; }
-        table.plan { width:100%; border-collapse:collapse; table-layout:fixed; }
-        .plan th { background:#0C7261; color:#fff; padding:8px 6px; border:1px solid #075e51; font-size:11px; }
-        .plan td { padding:7px 6px; border:1px solid #94a3b8; vertical-align:top; font-size:10px; line-height:1.5; word-wrap:break-word; }
-        .subject { width:15%; background:#e2e8f0; font-weight:bold; color:#0C7261; }
-        .cell { width:28.33%; }
-        .teacher { color:#475569; font-size:9px; font-weight:bold; }
-        .footer { margin-top:20px; text-align:center; color:#64748b; font-size:10px; border-top:1px solid #0C7261; padding-top:8px; }
+        @page {
+            background-color: #F4F1EB;
+            margin: 48mm 12mm 55mm;
+            header: html_planHeader;
+            footer: html_planFooter;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: #F4F1EB;
+            color: #470890;
+            direction: rtl;
+            font-family: Alexandria, sans-serif;
+            font-size: 10px;
+            line-height: 1.45;
+        }
+
+        .header-table,
+        .meta-table,
+        .plan-table,
+        .footer-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .header-table { margin-bottom: 3mm; }
+        .header-table td { vertical-align: middle; }
+        .header-spacer { height: 8mm; }
+
+        .brand-logo {
+            height: 27mm;
+            object-fit: contain;
+            vertical-align: middle;
+            width: 27mm;
+        }
+
+        .brand-name {
+            color: #004AAD;
+            font-family: Alexandria, sans-serif;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: .2px;
+            line-height: 1;
+        }
+
+        .brand-subtitle {
+            color: #004AAD;
+            font-family: Alexandria, sans-serif;
+            font-size: 7px;
+            letter-spacing: 3px;
+            margin-top: 3px;
+        }
+
+        .report-title {
+            color: #004AAD;
+            font-size: 21px;
+            font-weight: bold;
+            line-height: 1.1;
+            text-align: left;
+        }
+
+        .report-subtitle {
+            color: #004AAD;
+            font-family: Alexandria, sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin-top: 3px;
+            text-align: left;
+        }
+
+        .top-rule {
+            background: #004AAD;
+            height: 1.2px;
+            margin: 0 4mm;
+        }
+
+        .meta-wrap {
+            border: 1.2px solid #004AAD;
+            border-radius: 4mm;
+            margin-bottom: 8mm;
+            overflow: hidden;
+            padding: 4mm 2mm;
+        }
+
+        .meta-table td {
+            border-left: .7px solid #004AAD;
+            padding: 1mm 3mm;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .meta-table td:last-child { border-left: 0; }
+
+        .meta-label {
+            color: #004AAD;
+            font-size: 9px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+        }
+
+        .meta-value {
+            color: #004AAD;
+            font-family: Alexandria, sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        .plan-table {
+            border: 1.1px solid #470890;
+            table-layout: fixed;
+        }
+
+        .plan-table thead { display: table-header-group; }
+
+        .plan-table th {
+            background: #470890;
+            border-left: .7px solid #470890;
+            border-bottom: .8px solid #470890;
+            color: #F4F1EB;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 2.7mm 1.5mm;
+            text-align: center;
+        }
+
+        .plan-table th:last-child,
+        .plan-table td:last-child { border-left: 0; }
+
+        .plan-table td {
+            background: rgba(244, 241, 235, .9);
+            border-bottom: .7px solid #470890;
+            border-left: .7px solid #470890;
+            color: #004AAD;
+            font-size: 8.5px;
+            line-height: 1.4;
+            padding: 2.3mm 1.5mm;
+            text-align: center;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+
+        .plan-table tbody tr:last-child td { border-bottom: 0; }
+
+        .plan-table td.subject-cell {
+            background: #E8EEF6 !important;
+            color: #470890 !important;
+            font-size: 9px;
+            font-weight: bold;
+            text-align: center !important;
+            vertical-align: middle;
+        }
+
+        .subject-english {
+            color: #E8EEF6;
+            direction: ltr;
+            display: block;
+            font-family: Alexandria, sans-serif;
+            font-size: 7px;
+            font-weight: normal;
+            letter-spacing: .7px;
+            line-height: 1.35;
+            margin-top: 1.2mm;
+            text-align: left;
+        }
+
+        .teacher-name {
+            border-bottom: .5px solid #470890;
+            color: #004AAD;
+            display: block;
+            font-size: 8px;
+            font-weight: bold;
+            margin-bottom: 1.4mm;
+            padding-bottom: 1mm;
+        }
+
+        .plan-separator {
+            border-top: .5px dashed #470890;
+            margin: 2mm 0;
+        }
+
+        .empty-cell {
+            color: #7FA5D4;
+            font-family: Alexandria, sans-serif;
+            font-size: 12px;
+            padding-top: 0;
+            text-align: center;
+        }
+
+        .approval-note {
+            border-right: 2px solid #004AAD;
+            color: #004AAD;
+            font-size: 8.5px;
+            line-height: 1.7;
+            margin-top: 2mm;
+            padding: 2mm 3mm;
+        }
+
+        .footer-mascot {
+            height: 38mm;
+            padding-right: 3mm;
+            text-align: right;
+        }
+
+        .footer-mascot img {
+            display: inline;
+            height: 70mm;
+            width: auto;
+        }
+
+        .footer-table {
+            color: #004AAD;
+            font-size: 7.5px;
+        }
+
+        .footer-table td {
+            border-top: .6px solid #470890;
+            padding-top: 2mm;
+        }
+
+        .footer-page {
+            direction: ltr;
+            font-family: Alexandria, sans-serif;
+            font-weight: bold;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <img class="logo" src="{{ public_path('images/logo.png') }}" alt="Summit">
-        <h1>SUMMIT ONLINE SCHOOL</h1>
-        <div style="color:#dc2626;font-weight:bold;">الجدول الأسبوعي - {{ $gradeLevel->name }}</div>
-        <div class="meta">للفترة من {{ $weekStart->format('d/m/Y') }} إلى {{ $weekEnd->format('d/m/Y') }}</div>
+    <htmlpageheader name="planHeader">
+        <div class="header-spacer"></div>
+        <table class="header-table" dir="ltr">
+            <tr>
+                <td style="width:52%; text-align:left;">
+                    <img class="brand-logo" src="{{ public_path('images/logoo.png') }}" alt="Summit Online School">
+                    <span style="display:inline-block; margin-left:3mm; vertical-align:middle;">
+                        <span class="brand-name">Summit</span>
+                        <span class="brand-subtitle">ONLINE SCHOOL</span>
+                    </span>
+                </td>
+                <td style="width:48%;" dir="rtl">
+                    <div class="report-title">الخطة الأسبوعية</div>
+                    <div class="report-subtitle">Weekly Plan</div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="top-rule"></div>
+    </htmlpageheader>
+
+    <htmlpagefooter name="planFooter">
+        <div class="footer-mascot">
+            <img src="{{ public_path('images/ChatGPT Image Aug 9, 2026, 07_07_49 PM.png') }}" alt="Summit mascot">
+        </div>
+        <table class="footer-table" dir="rtl">
+            <tr>
+                <td>Summit Online School - خطة تعليمية واضحة ومتكاملة</td>
+                <td class="footer-page">PAGE {PAGENO} / {nbpg}</td>
+            </tr>
+        </table>
+    </htmlpagefooter>
+
+    <div class="meta-wrap">
+        <table class="meta-table" dir="rtl">
+            <tr>
+                <td style="width:25%;">
+                    <div class="meta-label">الصف الدراسي</div>
+                    <div class="meta-value">{{ $gradeLevel->name }}</div>
+                </td>
+                <td style="width:25%;">
+                    <div class="meta-label">المسار</div>
+                    <div class="meta-value">{{ ($gradeLevel->track->value ?? $gradeLevel->track) === 'arabic' ? 'عربي' : 'لغات' }}</div>
+                </td>
+                <td style="width:25%;">
+                    <div class="meta-label">الفترة الدراسية</div>
+                    <div class="meta-value">{{ $weekStart->format('d/m/Y') }} - {{ $weekEnd->format('d/m/Y') }}</div>
+                </td>
+
+            </tr>
+        </table>
     </div>
 
-    <table class="info">
-        <tr>
-            <td class="label">الصف الدراسي</td>
-            <td>{{ $gradeLevel->name }}</td>
-            <td class="label">المسار</td>
-            <td>{{ ($gradeLevel->track->value ?? $gradeLevel->track) === 'arabic' ? 'عربي' : 'لغات' }}</td>
-        </tr>
-    </table>
-
-    <table class="plan">
+    <table class="plan-table" dir="rtl">
         <thead>
             <tr>
-                <th class="subject">Sub.<br>المادة</th>
-                <th>Class Work<br>عمل الفصل</th>
-                <th>Homework<br>الواجب</th>
-                <th>Online games<br>ألعاب أونلاين</th>
+                <th style="width:18%;">المادة</th>
+                <th style="width:27.33%;">عمل الفصل</th>
+                <th style="width:27.33%;">الواجب المنزلي</th>
+                <th style="width:27.34%;">أنشطة وألعاب أونلاين</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($summary['rows'] as $row)
-                @php
-                    $values = ['class_work' => [], 'homework' => [], 'online_games' => []];
-                    foreach ($row['plans'] as $plan) {
-                        $teacherName = $plan->teacher?->full_name ? $plan->teacher->full_name . ': ' : '';
-                        foreach (array_keys($values) as $field) {
-                            if ($plan->{$field}) {
-                                $values[$field][] = $teacherName . $plan->{$field};
-                            }
-                        }
+    @foreach($summary['rows'] as $row)
+        @php
+            $values = ['class_work' => [], 'homework' => [], 'online_games' => []];
+
+            foreach ($row['plans'] as $plan) {
+                $teacherName = $plan->teacher?->full_name;
+
+                foreach (array_keys($values) as $field) {
+                    if ($plan->{$field}) {
+                        $values[$field][] = ['teacher' => $teacherName, 'text' => $plan->{$field}];
                     }
-                @endphp
-                <tr>
-                    <td class="subject">{{ $row['subject']->name_ar ?? $row['subject']->name }}</td>
-                    <td class="cell">{!! implode('<br><br>', array_map(fn ($value) => e($value), $values['class_work'])) ?: '-' !!}</td>
-                    <td class="cell">{!! implode('<br><br>', array_map(fn ($value) => e($value), $values['homework'])) ?: '-' !!}</td>
-                    <td class="cell">{!! implode('<br><br>', array_map(fn ($value) => e($value), $values['online_games'])) ?: '-' !!}</td>
-                </tr>
+                }
+            }
+
+            $subjectName = $row['subject']->name_ar ?? $row['subject']->name;
+            $subjectEnglish = $row['subject']->name ?? '';
+        @endphp
+
+        <tr>
+            <td class="subject-cell">
+                {{ $subjectName }}
+          
+            </td>
+            @foreach(['class_work', 'homework', 'online_games'] as $field)
+                <td>
+                    @forelse($values[$field] as $value)
+
+                        <div>{{ $value['text'] }}</div>
+                        @if(!$loop->last)<div class="plan-separator"></div>@endif
+                    @empty
+                        <div class="empty-cell">-</div>
+                    @endforelse
+                </td>
             @endforeach
+        </tr>
+    @endforeach
         </tbody>
     </table>
 
-    <div class="footer">تم اعتماد الجدول بعد تسجيل خطط جميع المدرسين المسؤولين عن الصف</div>
+
+
+
+      
+
 </body>
 </html>

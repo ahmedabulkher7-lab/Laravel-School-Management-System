@@ -19,8 +19,8 @@
             <i class="fas fa-users" style="color:#059669;"></i>
         </div>
         <div>
-            <div style="font-size:2rem;font-weight:800;color:#0C7261;">{{ $students->count() }}</div>
-            <div style="font-size:0.82rem;color:#475569;">طالب مسجل لديك</div>
+            <div style="font-size:2rem;font-weight:800;color:#0C7261;">{{ $todayStudentsCount }}</div>
+            <div style="font-size:0.82rem;color:#475569;">طلاب حصص اليوم</div>
         </div>
     </div>
 
@@ -29,8 +29,8 @@
             <i class="fas fa-check-double" style="color:#2563eb;"></i>
         </div>
         <div>
-            <div style="font-size:2rem;font-weight:800;color:#0C7261;">{{ count($loggedToday) }}</div>
-            <div style="font-size:0.82rem;color:#475569;">سجل تقدم تم إدخاله اليوم</div>
+            <div style="font-size:2rem;font-weight:800;color:#0C7261;">{{ $completedCount }}</div>
+            <div style="font-size:0.82rem;color:#475569;">تم تقييمهم اليوم</div>
         </div>
     </div>
 
@@ -39,8 +39,8 @@
             <i class="fas fa-exclamation-circle" style="color:#dc2626;"></i>
         </div>
         <div>
-            <div style="font-size:2rem;font-weight:800;color:#0C7261;">{{ $pendingStudents->count() }}</div>
-            <div style="font-size:0.82rem;color:#475569;">طالب بانتظار إدخال السجل</div>
+            <div style="font-size:2rem;font-weight:800;color:#0C7261;">{{ $pendingCount }}</div>
+            <div style="font-size:0.82rem;color:#475569;">بانتظار التقييم اليوم</div>
         </div>
     </div>
 </div>
@@ -49,9 +49,9 @@
 <div class="card" style="border-color:rgba(245,158,11,0.45);margin-bottom:1.5rem;">
     <div class="card-header" style="background:rgba(245,158,11,0.08);">
         <span class="card-title" style="color:#92400e;">
-            <i class="fas fa-calendar-week"></i> تذكير الجدول الأسبوعي
+            <i class="fas fa-calendar-week"></i> تذكير الجدول الأسبوعي 
         </span>
-        <a href="{{ $weeklyPlanReminder->data['url'] ?? route('teacher.weekly-plans.index') }}" class="btn-primary" style="padding:0.4rem 0.9rem;font-size:0.8rem;background:#d97706;">
+        <a  href="{{ route('teacher.weekly-plans.index') }}" class="btn-primary" style="padding:0.4rem 0.9rem;font-size:0.8rem;background:#d97706;">
             إدخال الجدول <i class="fas fa-arrow-left"></i>
         </a>
     </div>
@@ -61,13 +61,19 @@
 </div>
 @endif
 
-@if($pendingStudents->count() > 0)
+@if(!$hasSchedulesToday || $todayStudentsCount === 0)
+<div class="card" style="text-align:center;padding:2.5rem;background:#f8fafc;border-color:#e2e8f0;">
+    <i class="fas fa-calendar-check fa-3x" style="color:#0C7261;margin-bottom:1rem;opacity:0.8;"></i>
+    <div style="font-size:1.15rem;font-weight:700;color:#1e293b;margin-bottom:0.4rem;">لا توجد حصص مجدولة لك اليوم</div>
+    <div style="font-size:0.875rem;color:#64748b;">يمكنك مراجعة جدولك الأسبوعي أو سجلات الأيام السابقة من القائمة الجانبية.</div>
+</div>
+@elseif($pendingCount > 0)
 <div class="card" style="border-color:rgba(239,68,68,0.3);">
     <div class="card-header" style="background:rgba(239,68,68,0.05);">
         <span class="card-title" style="color:#991b1b;">
             <i class="fas fa-bell"></i> تذكير: طلاب بانتظار إدخال التقدم اليومي
         </span>
-        <a href="{{ route('teacher.progress.log') }}" class="btn-primary"
+        <a href="{{ route('teacher.lessons.index') }}" class="btn-primary"
            style="padding:0.4rem 0.9rem;font-size:0.8rem;background:linear-gradient(135deg, #ef4444, #dc2626);color:white;">
             ابدأ تسجيل التقدم <i class="fas fa-arrow-left"></i>
         </a>
@@ -99,7 +105,8 @@
 @else
 <div class="alert-success" style="justify-content:center;font-size:1.1rem;padding:2rem;">
     <i class="fas fa-star fa-2x" style="color:#facc15;margin-bottom:1rem;display:block;text-align:center;"></i>
-    <div>عمل رائع! لقد قمت بإدخال سجلات التقدم لجميع طلابك اليوم.</div>
+    <div>عمل رائع! لقد قمت بإدخال سجلات التقدم لجميع طلاب حصص اليوم.</div>
 </div>
 @endif
 @endsection
+

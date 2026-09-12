@@ -32,9 +32,7 @@
                     <td style="color:#475569;">{{ $student->user->email }}</td>
                     <td style="color:#475569;">{{ $student->enrollment_date->format('Y-m-d') }}</td>
                     <td style="text-align:center;">
-                        <a href="{{ route('admin.students.show', $student) }}" class="btn-secondary" style="padding:0.4rem 0.6rem;font-size:0.8rem;">
-                            <i class="fas fa-eye"></i>
-                        </a>
+                   
                         <a href="{{ route('admin.students.edit', $student) }}" class="btn-secondary" style="padding:0.4rem 0.6rem;font-size:0.8rem;color:#facc15;border-color:rgba(250,204,21,0.3);">
                             <i class="fas fa-edit"></i>
                         </a>

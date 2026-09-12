@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -15,7 +17,9 @@
 </head>
 <body style="display:flex;min-height:100vh;">
 
-    <aside class="sidebar">
+    <div class="sidebar-backdrop" data-nav-backdrop hidden></div>
+
+    <aside id="site-navigation" class="sidebar" data-site-navigation>
         <div style="text-align:center;padding:0.5rem 0 1.75rem;">
             <img src="{{ asset('images/logo.png') }}" alt="شعار المدرسة"
                  style="width:68px;height:68px;object-fit:contain;margin:0 auto 0.75rem;display:block;
@@ -74,12 +78,21 @@
         </div>
     </aside>
 
-    <main style="margin-right:260px;flex:1;padding:2rem;min-height:100vh;max-width:calc(100vw - 260px);">
+    <div class="app-shell">
+        <div class="mobile-topbar">
+            <span class="mobile-topbar-title">بوابة الطالب</span>
+            <button type="button" class="mobile-menu-btn" data-nav-toggle data-nav-open-label="فتح القائمة" data-nav-close-label="إغلاق القائمة" aria-controls="site-navigation" aria-expanded="false" aria-label="فتح القائمة">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <main class="main-content">
         @if(session('success'))
             <div class="alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
         @endif
         @yield('content')
-    </main>
+        </main>
+    </div>
 
     @livewireScripts
     @stack('scripts')

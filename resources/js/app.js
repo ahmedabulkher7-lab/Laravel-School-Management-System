@@ -3,18 +3,65 @@ import './bootstrap';
 document.addEventListener('DOMContentLoaded', () => {
     const navigationToggle = document.querySelector('[data-nav-toggle]');
     const navigation = document.querySelector('[data-site-navigation]');
+    const backdrop = document.querySelector('[data-nav-backdrop]');
+    const navigationIcon = navigationToggle?.querySelector('.fa-bars, .fa-xmark');
+    const mobileViewport = window.matchMedia('(max-width: 768px)');
+
+    const setNavOpen = (isOpen) => {
+        if (!navigation || !navigationToggle) {
+            return;
+        }
+
+        navigation.classList.toggle('is-open', isOpen);
+        navigationToggle.setAttribute('aria-expanded', String(isOpen));
+
+        if (navigationToggle.dataset.navOpenLabel && navigationToggle.dataset.navCloseLabel) {
+            navigationToggle.setAttribute(
+                'aria-label',
+                isOpen ? navigationToggle.dataset.navCloseLabel : navigationToggle.dataset.navOpenLabel,
+            );
+        }
+
+        if (navigationIcon) {
+            navigationIcon.classList.toggle('fa-bars', !isOpen);
+            navigationIcon.classList.toggle('fa-xmark', isOpen);
+        }
+
+        if (backdrop) {
+            backdrop.hidden = !isOpen;
+            backdrop.classList.toggle('is-visible', isOpen);
+        }
+
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+    };
 
     if (navigationToggle && navigation) {
         navigationToggle.addEventListener('click', () => {
-            const isOpen = navigation.classList.toggle('is-open');
-            navigationToggle.setAttribute('aria-expanded', String(isOpen));
+            setNavOpen(!navigation.classList.contains('is-open'));
         });
 
         navigation.querySelectorAll('a').forEach((link) => {
             link.addEventListener('click', () => {
-                navigation.classList.remove('is-open');
-                navigationToggle.setAttribute('aria-expanded', 'false');
+                setNavOpen(false);
             });
+        });
+
+        if (backdrop) {
+            backdrop.addEventListener('click', () => {
+                setNavOpen(false);
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && navigation.classList.contains('is-open')) {
+                setNavOpen(false);
+            }
+        });
+
+        mobileViewport.addEventListener('change', (event) => {
+            if (!event.matches) {
+                setNavOpen(false);
+            }
         });
     }
 
@@ -77,4 +124,64 @@ document.addEventListener('DOMContentLoaded', () => {
             counters.forEach((counter) => counterObserver.observe(counter));
         }
     }
+
+    document.querySelectorAll('[data-track-dependent-grade-level]').forEach((gradeLevelSelect) => {
+        const form = gradeLevelSelect.closest('form');
+        const trackSelect = form?.querySelector('[data-track-selector]');
+        const warning = form?.querySelector('[data-track-mismatch-message]');
+
+        if (!trackSelect) {
+            return;
+        }
+
+        const selectedGradeTrack = () => gradeLevelSelect.selectedOptions[0]?.dataset.track;
+        const hideWarning = () => {
+            if (warning) {
+                warning.hidden = true;
+            }
+        };
+        const showMismatchWarning = () => {
+            if (warning) {
+                warning.hidden = false;
+            }
+        };
+        const gradeMatchesTrack = () => {
+            const gradeTrack = selectedGradeTrack();
+
+            return !gradeTrack || !trackSelect.value || gradeTrack === 'both' || gradeTrack === trackSelect.value;
+        };
+
+        gradeLevelSelect.addEventListener('change', () => {
+            const gradeTrack = selectedGradeTrack();
+
+            if (!gradeTrack) {
+                hideWarning();
+                return;
+            }
+
+            if (!trackSelect.value) {
+                trackSelect.value = gradeTrack;
+                hideWarning();
+                return;
+            }
+
+            if (!gradeMatchesTrack()) {
+                gradeLevelSelect.value = '';
+                showMismatchWarning();
+                return;
+            }
+
+            hideWarning();
+        });
+
+        trackSelect.addEventListener('change', () => {
+            if (!gradeMatchesTrack()) {
+                gradeLevelSelect.value = '';
+                showMismatchWarning();
+                return;
+            }
+
+            hideWarning();
+        });
+    });
 });

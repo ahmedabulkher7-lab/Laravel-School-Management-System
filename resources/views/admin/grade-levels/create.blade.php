@@ -21,6 +21,18 @@
                 @error('name') <span class="form-error">{{ $message }}</span> @enderror
             </div>
             <div class="form-group">
+                <label class="form-label" for="track">القسم <span style="color:#ef4444">*</span></label>
+                <select id="track" name="track" class="form-select" required>
+                    <option value="">-- اختر القسم --</option>
+                    @foreach($tracks as $track)
+                        <option value="{{ $track->value }}" {{ old('track') === $track->value ? 'selected' : '' }}>
+                            {{ $track->label() }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('track') <span class="form-error">{{ $message }}</span> @enderror
+            </div>
+            <div class="form-group">
                 <label class="form-label">الترتيب التسلسلي (رقم) <span style="color:#ef4444">*</span></label>
                 <input type="number" name="order" class="form-input" value="{{ old('order', 1) }}" min="1" required>
                 @error('order') <span class="form-error">{{ $message }}</span> @enderror

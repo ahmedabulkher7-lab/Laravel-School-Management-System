@@ -16,8 +16,6 @@
                 <tr>
                     <th>اسم الطالب</th>
                     <th>المرحلة الدراسية</th>
-                    <th>تاريخ الميلاد</th>
-                    <th>هاتف ولي الأمر</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,8 +26,6 @@
                         {{ $student->full_name }}
                     </td>
                     <td><span class="badge badge-green">{{ $student->gradeLevel->name }}</span></td>
-                    <td style="color:#475569;direction:ltr;text-align:right;">{{ $student->date_of_birth->format('Y-m-d') }}</td>
-                    <td style="color:#0C7261;direction:ltr;text-align:right;">{{ $student->guardian_phone }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="4" style="text-align:center;padding:2rem;">لم يتم تعيين طلاب لك بعد.</td></tr>

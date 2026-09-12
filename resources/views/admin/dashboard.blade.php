@@ -70,6 +70,18 @@
     </div>
 </div>
 
+<div class="card" style="margin-bottom:2rem;border-color:rgba(245,158,11,0.35);">
+    <div class="card-header" style="background:rgba(245,158,11,0.08);">
+        <span class="card-title" style="color:#a16207;"><i class="fas fa-user-check"></i> متابعة تقييمات المدرسين</span>
+        <a href="{{ route('admin.teacher-evaluation-status.index') }}" class="btn-primary" style="padding:0.45rem 0.9rem;font-size:0.8rem;">
+            متابعة التسجيل اليومي <i class="fas fa-arrow-left"></i>
+        </a>
+    </div>
+    <div class="card-body" style="color:#475569;font-size:0.88rem;">
+        اعرض لكل مدرس الطلاب الذين سجّل لهم تقييمًا والطلاب المتبقين، مع فلاتر للتاريخ والمدرس والصف والمسار والمادة وحالة الإنجاز.
+    </div>
+</div>
+
 <!-- Recent Progress -->
 <div class="card">
     <div class="card-header">

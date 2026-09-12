@@ -2,34 +2,24 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
-use App\Models\DailyProgress;
-use App\Models\Student;
-use App\Models\GradeLevel;
+use App\Services\TeacherDashboardService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request, TeacherDashboardService $dashboardService): View
     {
-        $teacher = auth()->user()->teacher;
-        $students = $teacher
-            ? Student::whereIn('grade_level_id', $teacher->gradeLevels()->select('grade_levels.id'))->with('gradeLevel')->get()
-            : collect();
-        $today    = Carbon::today()->toDateString();
+        $teacher = $request->user()->teacher;
+        $today = Carbon::today();
 
-        $loggedToday = DailyProgress::where('teacher_id', $teacher?->id)
-            ->whereDate('date', $today)->pluck('student_id')->toArray();
+        $dashboardData = $dashboardService->getDailyDashboardData($teacher, $today);
 
-        $pendingStudents = $students->whereNotIn('id', $loggedToday);
-
-        // Group pending students by grade level for better overview
-        $pendingByGradeLevel = $pendingStudents->groupBy(fn($s) => $s->gradeLevel?->name ?? 'غير محدد');
-        $weeklyPlanReminder = $teacher?->user?->unreadNotifications()
-            ->where('data->type', 'weekly_plan_reminder')
-            ->latest()
-            ->first();
-
-        return view('teacher.dashboard',
-            compact('teacher', 'students', 'pendingStudents', 'pendingByGradeLevel', 'loggedToday', 'today', 'weeklyPlanReminder'));
+        return view('teacher.dashboard', array_merge($dashboardData, [
+            'teacher' => $teacher,
+            'today' => $today->toDateString(),
+        ]));
     }
 }
+

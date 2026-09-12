@@ -18,7 +18,6 @@
                     <th>اسم الطالب</th>
                     <th>الحضور</th>
                     <th>التفاعل</th>
-                    <th>الواجب</th>
                     <th>الدرجة</th>
                     <th>الملاحظات</th>
                 </tr>
@@ -37,10 +36,7 @@
                         @if($rec->interaction_level === 'engaged') <span class="badge badge-purple">متفاعل</span>
                         @else <span class="badge badge-gray">غير متفاعل</span> @endif
                     </td>
-                    <td>
-                        @if($rec->homework_submitted) <span class="badge badge-green">✓</span>
-                        @else <span class="badge badge-red">✗</span> @endif
-                    </td>
+    
                     <td>
                         @if($rec->score !== null)
                             <span style="font-weight:700;color:{{ $rec->score >= 7 ? '#4ade80' : ($rec->score >= 5 ? '#facc15' : '#f87171') }};">
