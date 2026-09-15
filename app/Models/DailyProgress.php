@@ -15,9 +15,17 @@ class DailyProgress extends Model {
         'date' => 'date',
         'homework_submitted' => 'boolean',
         'score' => 'decimal:2',
-        'attendance_status' => AttendanceStatus::class,
-        'interaction_level' => InteractionLevel::class,
     ];
+
+    public function attendanceStatusEnum(): ?AttendanceStatus
+    {
+        return AttendanceStatus::tryFrom($this->attendance_status instanceof \BackedEnum ? $this->attendance_status->value : (string) $this->attendance_status);
+    }
+
+    public function interactionLevelEnum(): ?InteractionLevel
+    {
+        return InteractionLevel::tryFrom($this->interaction_level instanceof \BackedEnum ? $this->interaction_level->value : (string) $this->interaction_level);
+    }
 
     public function student(): BelongsTo { return $this->belongsTo(Student::class); }
     public function subject(): BelongsTo { return $this->belongsTo(Subject::class); }

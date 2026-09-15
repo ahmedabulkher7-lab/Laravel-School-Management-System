@@ -358,8 +358,12 @@
                                 <span class="date-number">{{ $day->format('d/m') }}</span>
                             </td>
                             @if($record)
-                                <td><span class="status">{{ $record->attendance_status === 'present' ? 'حاضر' : ($record->attendance_status === 'absent' ? 'غائب' : 'متأخر') }}</span></td>
-                                <td><span class="status">{{ $record->interaction_level === 'engaged' ? 'متفاعل' : 'غير متفاعل' }}</span></td>
+                                @php
+                                    $recAtt = $record->attendance_status instanceof \BackedEnum ? $record->attendance_status->value : (string) $record->attendance_status;
+                                    $recAct = $record->interaction_level instanceof \BackedEnum ? $record->interaction_level->value : (string) $record->interaction_level;
+                                @endphp
+                                <td><span class="status">{{ $recAtt === 'present' ? 'حاضر' : ($recAtt === 'absent' ? 'غائب' : 'متأخر') }}</span></td>
+                                <td><span class="status">{{ $recAct === 'engaged' ? 'متفاعل' : 'غير متفاعل' }}</span></td>
                                 <td>@if($record->score !== null)<span class="score">{{ $record->score }}/10</span>@else — @endif</td>
                                 <td class="comment-cell">{{ $record->comment ?: '—' }}</td>
                             @else

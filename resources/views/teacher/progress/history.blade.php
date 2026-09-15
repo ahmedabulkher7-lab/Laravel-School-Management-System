@@ -28,12 +28,18 @@
                     <td style="color:#475569;direction:ltr;text-align:right;">{{ $rec->date->format('Y-m-d') }}</td>
                     <td style="font-weight:600;color:#0C7261;">{{ $rec->student->full_name }}</td>
                     <td>
-                        @if($rec->attendance_status === 'present') <span class="badge badge-green">حاضر</span>
-                        @elseif($rec->attendance_status === 'absent') <span class="badge badge-red">غائب</span>
+                        @php
+                            $att = $rec->attendance_status instanceof \BackedEnum ? $rec->attendance_status->value : (string) $rec->attendance_status;
+                        @endphp
+                        @if($att === 'present') <span class="badge badge-green">حاضر</span>
+                        @elseif($att === 'absent') <span class="badge badge-red">غائب</span>
                         @else <span class="badge badge-yellow">متأخر</span> @endif
                     </td>
                     <td>
-                        @if($rec->interaction_level === 'engaged') <span class="badge badge-purple">متفاعل</span>
+                        @php
+                            $act = $rec->interaction_level instanceof \BackedEnum ? $rec->interaction_level->value : (string) $rec->interaction_level;
+                        @endphp
+                        @if($act === 'engaged') <span class="badge badge-purple">متفاعل</span>
                         @else <span class="badge badge-gray">غير متفاعل</span> @endif
                     </td>
     

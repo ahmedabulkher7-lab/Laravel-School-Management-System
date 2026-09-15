@@ -67,8 +67,11 @@
                     <td style="font-weight:700;color:#0C7261;">{{ $rec->subject->name_ar ?? $rec->subject->name }}</td>
                     <td style="color:#475569;direction:ltr;text-align:right;">{{ $rec->date->format('Y-m-d') }}</td>
                     <td>
-                        @if($rec->attendance_status === 'present') <span style="color:#166534;"><i class="fas fa-check"></i></span>
-                        @elseif($rec->attendance_status === 'absent') <span style="color:#dc2626;"><i class="fas fa-times"></i></span>
+                        @php
+                            $att = $rec->attendance_status instanceof \BackedEnum ? $rec->attendance_status->value : (string) $rec->attendance_status;
+                        @endphp
+                        @if($att === 'present') <span style="color:#166534;"><i class="fas fa-check"></i></span>
+                        @elseif($att === 'absent') <span style="color:#dc2626;"><i class="fas fa-times"></i></span>
                         @else <span style="color:#ca8a04;"><i class="fas fa-clock"></i></span> @endif
                     </td>
                     <td>
