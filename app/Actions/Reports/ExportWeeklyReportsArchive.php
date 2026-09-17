@@ -16,7 +16,8 @@ class ExportWeeklyReportsArchive
     {
         abort_unless(class_exists(ZipArchive::class), 500, "امتداد ZIP غير متاح على الخادم.");
 
-        set_time_limit(120);
+        ini_set('memory_limit', '512M');
+        set_time_limit(180);
 
         $temporaryDirectory = storage_path("app/private/report-archives");
         File::ensureDirectoryExists($temporaryDirectory);
@@ -28,11 +29,11 @@ class ExportWeeklyReportsArchive
         }
 
         foreach ($reports as $report) {
-            $fileName = $this->formatReportFileName($report);
-            $zip->addFile(
-                Storage::path($report->file_path),
-                $fileName
-            );
+            $filePath = Storage::path($report->file_path);
+            if (file_exists($filePath)) {
+                $fileName = $this->formatReportFileName($report);
+                $zip->addFile($filePath, $fileName);
+            }
         }
 
         $zip->close();

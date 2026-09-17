@@ -92,11 +92,12 @@ class ReportController extends Controller
         $force      = $request->boolean('force') ? '--force' : '';
         $dateArg    = $weekStart->toDateString();
 
-        // تشغيل الـ command في الخلفية (Windows: start /B)
+        // تشغيل الـ command في الخلفية (Windows: start "" /B)
         if (PHP_OS_FAMILY === 'Windows') {
-            pclose(popen("start /B {$phpBinary} {$artisan} reports:generate-week {$dateArg} {$force} > NUL 2>&1", 'r'));
+            $cmd = 'start "" /B "' . $phpBinary . '" "' . $artisan . '" reports:generate-week ' . $dateArg . ' ' . $force . ' > NUL 2>&1';
+            pclose(popen($cmd, 'r'));
         } else {
-            pclose(popen("{$phpBinary} {$artisan} reports:generate-week {$dateArg} {$force} > /dev/null 2>&1 &", 'r'));
+            pclose(popen('"' . $phpBinary . '" "' . $artisan . '" reports:generate-week ' . $dateArg . ' ' . $force . ' > /dev/null 2>&1 &', 'r'));
         }
 
         return response()->json(['message' => 'بدأ التوليد.', 'cache_key' => $cacheKey]);

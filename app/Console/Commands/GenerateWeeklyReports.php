@@ -19,6 +19,9 @@ class GenerateWeeklyReports extends Command
 
     public function handle(WeeklyReportService $service): int
     {
+        ini_set('memory_limit', '1024M');
+        set_time_limit(600);
+
         $weekStart = Carbon::parse($this->argument('week_start'))->startOfDay();
         $force     = $this->option('force');
 
@@ -57,6 +60,8 @@ class GenerateWeeklyReports extends Command
                 $failed++;
                 $this->error("فشل الطالب {$student->id}: {$e->getMessage()}");
             }
+
+            gc_collect_cycles();
 
             // تحديث الـ Cache بعد كل طالب
             Cache::put($cacheKey, [
